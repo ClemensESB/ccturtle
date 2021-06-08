@@ -15,12 +15,13 @@ HOME = vector.new(0,0,0)
 -- // --- will be kept in inventory ---
 ITEMS = {
 	["chests"] = {
-		["modChest16"] = "enderchests:ender_chest",
-		["modChest12"] = "enderstorage:ender_storage",
-		["vanillaChest16"] = "minecraft:shulker_box",
-		["vanillaChest12"] = "minecraft:purple_shulker_box",
+		["enderChest16"] = "enderchests:ender_chest",
+		["enderChest12"] = "enderstorage:ender_storage",
+		["shulkerChest16"] = "minecraft:shulker_box",
+		["shulkerChest12"] = "minecraft:purple_shulker_box",
 		["immersiveChest12"] = "immersiveengineering:wooden_device0",
-		["immersiveChest16"] = "immersiveengineering:crate"
+		["immersiveChest16"] = "immersiveengineering:crate",
+		["mekanismChest16"] = "mekanism:personal_chest"
 	},
 	["pickaxe"] = "minecraft:diamond_pickaxe",
 	["modemNormal"] = "computercraft:wireless_modem_normal",
@@ -494,18 +495,31 @@ function main(hasArgs)
 	local startface = FACEING
 	refuel()
 	if not hasArgs then
-		print("depth one level has heigth 2(3)")
+		print("height")
 		local EBN = read()
 		local EBN = tonumber(EBN)
-		print("laenge des Schachtes:")
+		print("length of tunnel:")
 		local LEN = read()
 		local LEN = tonumber(LEN)
-		print("laenge der Gaenge:")
+		print("length of branches:")
 		local LENG = read()
 		local LENG = tonumber(LENG)
 	else
 		print("start script with z:"..EBN.." y:"..LEN.." x:"..LENG)
 	end
+	local chest = -1
+	for k,v in pairs(ITEMS["chests"]) do
+		if chest == -1 then
+			chest = searchItem(v)
+		end
+	end
+	if chest == -1 then
+		print("no listed chest detected please provide chest or make")
+	end
+	
+	
+
+
 	local schachtStack = posStack:create()
 	local gangStack = posStack:create()
 	local pos = vector:new(POSITION.x,POSITION.y,POSITION.z)
