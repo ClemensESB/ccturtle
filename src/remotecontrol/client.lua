@@ -1,5 +1,5 @@
 _G.shell = shell
-
+local myURL = "ws://66568dd80de6.ngrok.io:80"
 VERSION = "1.16"
 FACEING = 0
 POSITION = vector.new(0,0,0)
@@ -56,11 +56,85 @@ end,
 		erg = false
 	end
 	return erg
+end,
+move = function (targetVector)
+	if targetVector == nil then return end
+	local movV = targetVector:sub(POSITION)
+	local success = true
+	if movV.z > 0 then
+		while movV.z > 0 do
+			if turtle.up() then
+				movV.z = movV.z - 1
+			end
+		end
+	elseif movV.z < 0 then
+		while movV.z < 0 do
+			if turtle.down() then
+				movV.z = movV.z + 1
+			else
+				success = false
+			end
+		end
+	else
+	end
+	if success then
+		POSITION.z = targetVector.z
+	end
+	if movV.y > 0 then
+		GLOB_FUNC.turn(0)
+		while movV.y > 0 do
+			if turtle.forward() then
+				movV.y = movV.y - 1
+			else
+				success = false
+			end
+		end
+	elseif movV.y < 0 then
+		GLOB_FUNC.turn(2)
+		while movV.y < 0 do
+			if turtle.forward() then
+				movV.y = movV.y + 1
+			else
+				success = false
+			end
+		end
+	else
+	end
+	if success then
+		POSITION.y = targetVector.y
+	end
+	if movV.x > 0 then
+		GLOB_FUNC.turn(1)
+		while movV.x > 0 do
+			if turtle.forward() then
+				movV.x = movV.x - 1
+			else
+				success = false
+			end
+		end
+	elseif movV.x < 0 then
+		GLOB_FUNC.turn(3)
+		while movV.x < 0 do
+			if turtle.forward() then
+				movV.x = movV.x + 1
+			else
+				success = false
+			end
+		end
+	end
+	if success then
+		POSITION.x = targetVector.x
+	end
+	return success
+end,
+getPosition = function()
+	local erg = {POSITION.x,POSITION.y,POSITION.z}
+	return erg
 end
 }
 
 NET = {
-    server = "ws://localhost:2256",
+    server = myURL,
     socket = nil,
     open_channels = {},
     messageq = nil
@@ -86,20 +160,13 @@ end
 function NET.close()
     if NET.socket then NET.socket.close() end
 end
-
-function procedure(loaded)
-    local erg =  {}
-    
-    return erg
-end
-
 function print_r(array)
 	for i,v in pairs(array) do
 		print(i,v)
 	end
 end
 
-local myURL = "ws://localhost:2256"
+
 NET.send("connection established")
 while true do
     repeat
@@ -114,7 +181,7 @@ while true do
         if func ~= nil then
             local ok = {pcall(func)}
             if ok[1] then
-				print("test")
+				print_r(ok)
 				for k,v in pairs(ok) do
 					table.insert(erg,k,v)
 				end
