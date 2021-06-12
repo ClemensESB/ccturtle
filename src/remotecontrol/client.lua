@@ -1,8 +1,10 @@
+_G.shell = shell
+
 VERSION = "1.16"
 FACEING = 0
 POSITION = vector.new(0,0,0)
 HOME = vector.new(0,0,0)
-GLOB_FUNC = {
+_G.GLOB_FUNC = {
     turn = function(direction)
     direction = tonumber(direction)
 	local turnDirection = direction % 4
@@ -87,22 +89,8 @@ end
 
 function procedure(loaded)
     local erg =  {}
-    local ok,func = pcall(loaded)
-        if ok then
-            local temp = {loaded()}
-            table.insert(erg,1,temp)
-        else
-            print("Execution error:", func)
-        end
+    
     return erg
-end
-
-function locally(loaded)
-    if loaded["funk"] == "turn" then
-        return GLOB_FUNC.turn(loaded["param"])
-    elseif loaded["funk"] == "getSidePosition" then
-        return GLOB_FUNC.getSidePosition(loaded["param"])
-    end
 end
 
 function print_r(array)
@@ -120,28 +108,25 @@ while true do
     local msg = message
     local obj,erro = textutils.unserializeJSON(msg)
     local func,err
-    if obj ~= nil or obj["func"] ~= nil then
+	local erg ={}
+    if erro == nil and obj ~= nil then
         func,err = load(obj["func"])
+        if func ~= nil then
+            local ok = {pcall(func)}
+            if ok[1] then
+				print("test")
+				for k,v in pairs(ok) do
+					table.insert(erg,k,v)
+				end
+            else
+                print("Execution error:", func)
+            end
+        else
+            print("Compilation error:")
+        end
     else
         err = true
     end
-    local erg = {}
-    if err == nil then
-        local pro = procedure(func)
-        table.insert(erg,1,pro)
-    else
-        --print("Compilation error:",err)
-    end
-    if obj["shell"] ~= nil then
-        table.insert(erg,2,shell.run(obj["shell"]))
-    end
-    if obj["local"] ~= nil then
-        local temp = obj["local"]
-        table.insert(erg,3,locally(temp))
-    end
-    
-    
-
     if erg ~= nil then
         print(textutils.serializeJSON(erg))
         NET.send(textutils.serializeJSON(erg)) 

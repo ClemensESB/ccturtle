@@ -7,6 +7,13 @@ import json
 import string
 from pprint import pprint
 #32 zeichen label turtle
+#TODO
+#datenbank
+#gui
+#vordefinierte prozeduren für inspect,inventory,craft
+
+
+
 
 def is_json(myjson):
   try:
@@ -16,13 +23,13 @@ def is_json(myjson):
   return True
 
 connected = set()
+async def command(ws):
+  print("command: ")
+  turtleCommand = input()
+  con = '{"func": "'+turtleCommand+'"}'
+  await ws.send(con)
 
-shellCommand = 'label set \\\"kaese\\\"'
-turtleCommand = "turtle.inspectDown()"
-localFunc = "turn"
-localParam = "1"
-con = '{"shell": "'+shellCommand+'","func": "return '+turtleCommand + \
-    '","local":{"funk":"'+localFunc+'","param":"'+localParam+'"}}'
+
 
 async def handler(websocket, path):
   try:
@@ -37,7 +44,7 @@ async def handler(websocket, path):
       for conn in connected:
         if conn != websocket:
           await conn.send(message)
-        await websocket.send(con)
+        await command(websocket)
       counter += 1
   except Exception as ex:
       connected.remove(websocket)
