@@ -109,9 +109,7 @@ class Engine3D:
         self.triangles = []
         for triangle in triangles:
             if len(triangle) != 4:
-                fill = "#245123"
-                line = "#984277"
-                triangle.append([fill, line])
+                triangle.append('gray')
             self.triangles.append(graphics.face.Face(triangle))
             
     def __init__(self, points, triangles, width=1000, height=700, distance=6, scale=100, title='3D', background='white'):
