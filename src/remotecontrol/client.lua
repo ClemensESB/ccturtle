@@ -57,75 +57,63 @@ end,
 	end
 	return erg
 end,
-move = function (targetVector)
-	if targetVector == nil then return end
-	local movV = targetVector:sub(POSITION)
-	local success = true
-	if movV.z > 0 then
-		while movV.z > 0 do
-			if turtle.up() then
-				movV.z = movV.z - 1
-			end
+-- north = 0 south = 2 west = 3 east = 1 up = 4 down = 5
+move = function (direction)
+	if direction == "up" then
+		if turtle.up() then
+			POSITION.y = POSITION.y+1
+			return true
 		end
-	elseif movV.z < 0 then
-		while movV.z < 0 do
-			if turtle.down() then
-				movV.z = movV.z + 1
-			else
-				success = false
-			end
+	elseif direction == "down" then
+		if turtle.down() then
+			POSITION.y = POSITION.y-1
+			return true
 		end
-	else
-	end
-	if success then
-		POSITION.z = targetVector.z
-	end
-	if movV.y > 0 then
-		GLOB_FUNC.turn(0)
-		while movV.y > 0 do
+	elseif direction == "forward" then
+		if FACEING == 0 then
 			if turtle.forward() then
-				movV.y = movV.y - 1
-			else
-				success = false
+				POSITION.z = POSITION.z-1
+				return true
 			end
-		end
-	elseif movV.y < 0 then
-		GLOB_FUNC.turn(2)
-		while movV.y < 0 do
+		elseif FACEING == 1 then
 			if turtle.forward() then
-				movV.y = movV.y + 1
-			else
-				success = false
+				POSITION.x = POSITION.x+1
+				return true
 			end
-		end
-	else
-	end
-	if success then
-		POSITION.y = targetVector.y
-	end
-	if movV.x > 0 then
-		GLOB_FUNC.turn(1)
-		while movV.x > 0 do
+		elseif FACEING == 2 then
 			if turtle.forward() then
-				movV.x = movV.x - 1
-			else
-				success = false
+				POSITION.z = POSITION.z+1
+				return true
 			end
-		end
-	elseif movV.x < 0 then
-		GLOB_FUNC.turn(3)
-		while movV.x < 0 do
+		elseif FACEING == 3 then
 			if turtle.forward() then
-				movV.x = movV.x + 1
-			else
-				success = false
+				POSITION.x = POSITION.x-1
+				return true
+			end
+		end
+	elseif direction == "back" then
+		if FACEING == 0 then
+			if turtle.forward() then
+				POSITION.z = POSITION.z+1
+				return true
+			end
+		elseif FACEING == 1 then
+			if turtle.forward() then
+				POSITION.x = POSITION.x-1
+				return true
+			end
+		elseif FACEING == 2 then
+			if turtle.forward() then
+				POSITION.z = POSITION.z-1
+				return true
+			end
+		elseif FACEING == 3 then
+			if turtle.forward() then
+				POSITION.x = POSITION.x+1
+				return true
 			end
 		end
 	end
-	if success then
-		POSITION.x = targetVector.x
-	end
-	return success
 end,
 getPosition = function()
 	local erg = {POSITION.x,POSITION.y,POSITION.z}
