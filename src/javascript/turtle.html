@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turtle</title>
+</head>
+
+<body>
+    <h1>Turtle websocket Client</h1>
+    <button id="forward">forward</button>
+    <button id="back">back</button>
+    <button id="insert">insert</button>
+    <button id="select">select</button>
+    <button id="inspectUp">inspectUp</button>
+    <button id="inspect">inspect</button>
+    <button id="inspectDown">inspectDown</button>
+    <button id="left">turnLeft</button>
+    <button id="right">turnRight</button>
+</body>
+<script src="./3d/node_modules/three/build/three.min.js"></script>
+<script src="./3d/node_modules/three/examples/js/controls/TrackballControls.js"></script>
+<script>
+    
+    //import * as THREE from "./3d/node_modules/three/build/three.js"
+    //import { TrackballControls } from './3d/node_modules/three/examples/jsm/controls/TrackballControls'
+    let camera, controls, scene, renderer;
+    var device = [];
+    var position = new THREE.Vector3(0.0, 0.0, 0.0);
+    //boxes
+    function CustBox(x, y, z, color) {
+        geometry = new THREE.BoxGeometry(1, 1, 1);
+        meshmaterial = new THREE.MeshBasicMaterial({ color: color });
+        meshmaterial.transparent = true;
+        meshmaterial.opacity = 0.6;
+        edges = new THREE.EdgesGeometry(geometry);
+        this.line = new THREE.LineSegments(edges,new THREE.LineBasicMaterial({ color: 0x000000 }))
+        this.line.position.x = x;
+        this.line.position.y = y;
+        this.line.position.z = z;
+        this.mesh = new THREE.Mesh(geometry, meshmaterial);
+        this.mesh.position.x = x;
+        this.mesh.position.y = y;
+        this.mesh.position.z = z;
+    }
+    init();
+    animate();
+    function init() {
+        // kamera
+        const aspect = window.innerWidth/ window.innerHeight;
+
+        camera = new THREE.PerspectiveCamera(75, aspect, 1, 1000);
+        //camera = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000);
+        camera.position.z =5;
+        //camera.staticMoving = true;
+        //szene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xcccccc);
+
+        //renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth -80, window.innerHeight -120);
+        document.body.appendChild(renderer.domElement);
+        //resize
+        window.addEventListener('resize', onWindowResize);
+        createControls(camera);
+    }
+    
+
+    function onWindowResize() {
+        const aspect = window.innerWidth/ window.innerHeight;
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth -80, window.innerHeight-120);
+        controls.handleResize();
+    }
+    function createControls(camera) {
+        controls = new THREE.TrackballControls(camera, renderer.domElement);
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.5;
+        controls.minDistance = 2;
+        controls.maxDistance = 20;
+
+        controls.target = position;
+        //controls.keys = ['KeyA', 'KeyS', 'KeyD'];
+
+    }
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.target = position;
+        controls.update();
+        
+        //camera.lookAt(position);
+        render();
+        
+    }
+
+    
+
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    function hashCode(str) { // java String#hashCode
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return hash;
+    }
+
+    function intToRGB(i) {
+        var c = (i & 0x00FFFFFF)
+            .toString(16)
+            .toUpperCase();
+
+        return "00000".substring(0, 6 - c.length) + c;
+    }
+
+    function alreadyMapped(boxes,obj){
+        let flag = false;
+        boxes.forEach((item,index)=>{
+            //console.log(item);
+            //console.log(obj);
+            if(obj.mesh.position.x == item.position.x && obj.mesh.position.y == item.position.y && obj.mesh.position.z == item.position.z){
+                //console.log("boxes",boxes);
+                //console.log("item", item);
+                //console.log("index", index);
+                //console.log("object",obj);
+                flag = true;
+            }
+        });
+        return flag;
+    }
+    var inspectDown = document.getElementById("inspectDown");
+    var inspectUp = document.getElementById("inspectUp");
+    var inspect = document.getElementById("inspect");
+    var forward = document.getElementById("forward");
+    var backward = document.getElementById("back");
+    var insert = document.getElementById("insert");
+    var select = document.getElementById("select");
+    var left = document.getElementById("left");
+    var right = document.getElementById("right");
+
+    const ws = new WebSocket("ws://localhost:2256");
+    ws.addEventListener("open", () => {
+        console.log("we are connected");
+    });
+
+    var inspectf = async function (side) {
+        let promise = new Promise((resolve, reject) => {
+            setTimeout(() => resolve("done!"), 300)
+        });
+        await promise.then(value => {
+            ws.send('{"func":"return GLOB_FUNC.inspect(\\\"' + side + '\\\")"}');
+        }, reason => {
+            console.error(reason);
+        });
+    }
+    inspectDown.addEventListener("click", async () => {
+        await inspectf("down");
+    });
+    inspectUp.addEventListener("click", async () => {
+        await inspectf("up");
+    });
+    inspect.addEventListener("click", async () => {
+        await inspectf("front");
+    });
+    forward.addEventListener("click", async () => {
+        ws.send('{"func":"return GLOB_FUNC.move(\\\"forward\\\")"}');
+        await inspectf("down");
+        await inspectf("up");
+        await inspectf("front");
+    });
+    backward.addEventListener("click", () => {
+        ws.send('{"func":"return GLOB_FUNC.move(\\\"back\\\")"}');
+    });
+    insert.addEventListener("click", () => {
+        ws.send('{"db":"INSERT INTO devices (turtleName) VALUES (\\\"\\\")"}');
+    });
+    select.addEventListener("click", () => {
+        ws.send('{"db":"select * FROM position"}');
+    });
+
+    right.addEventListener("click", async () => {
+        ws.send('{"func":"return GLOB_FUNC.turnDirect(\\\"right\\\")"}');
+        await inspectf("front");
+    });
+    left.addEventListener("click", async () => {
+        ws.send('{"func":"return GLOB_FUNC.turnDirect(\\\"left\\\")"}');
+        await inspectf("front");
+    });
+
+    ws.addEventListener("message", (data) => {
+        //console.log("data",data);
+        var first = data.data.indexOf("{");
+        var last = data.data.lastIndexOf("}");
+        //console.log(first);
+        var temp = data.data.slice(first, last+1);
+        temp = temp.replace(/\\/g, "");
+        //console.log(temp);
+        if(temp != ""){
+            var obj = JSON.parse(temp);
+        }
+        console.log(obj);
+        //console.log(JSON.parse(data[1]));
+        if(obj.block!== undefined && obj.block[0]){
+            const box = new CustBox(obj.position.x, obj.position.y, obj.position.z,new THREE.Color("#"+intToRGB(hashCode(obj.block[1].name))));
+            if (alreadyMapped(scene.children,box)) {
+                //console.log("scene.children");
+            }else{
+                scene.add(box.mesh);
+                scene.add(box.line);
+            }
+            //console.log(scene.children);
+            //scene.remove(box.line);
+        }if (obj.faceing !== undefined) {
+            if(obj.position!== undefined){
+                var lastPos = device.pop();
+                if (lastPos !== undefined && alreadyMapped(scene.children, lastPos)) {
+                    //scene.remove(box.line);
+                    scene.remove(lastPos.mesh);
+                }
+                position = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+                const turtle = new CustBox(position.x, position.y, position.z, 0x0000FF);
+                device.push(turtle);
+                console.log(position);
+                scene.add(turtle.mesh);
+            }
+        } else {
+            
+        }
+    });
+
+
+</script>
+
+</html>

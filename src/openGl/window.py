@@ -86,14 +86,14 @@ class Window:
 class Cube:
     def __init__(self,x,y,z,size):
 
-        vertices = [x-(size/2), y-(size/2), z+(size/2), 1.0, 0.0, 0.0,
-                    x+(size/2), y-(size/2), z+(size/2), 0.0, 1.0, 0.0,
-                    x+(size/2), y+(size/2), z+(size/2), 0.0, 0.0, 1.0,
-                    x-(size/2), y+(size/2), z+(size/2), 1.0, 1.0, 1.0,
+        vertices = [x-(size/2), y-(size/2), z+(size/2), 1.0, 0.3, 1.0,
+                    x+(size/2), y-(size/2), z+(size/2), 1.0, 0.3, 1.0,
+                    x+(size/2), y+(size/2), z+(size/2), 1.0, 0.3, 1.0,
+                    x-(size/2), y+(size/2), z+(size/2), 1.0, 0.3, 1.0,
 
-                    x-(size/2), y-(size/2), z-(size/2), 1.0, 0.0, 0.0,
-                    x+(size/2), y-(size/2), z-(size/2), 0.0, 1.0, 0.0,
-                    x+(size/2), y+(size/2), z-(size/2), 0.0, 0.0, 1.0,
+                    x-(size/2), y-(size/2), z-(size/2), 1.0, 1.0, 1.0,
+                    x+(size/2), y-(size/2), z-(size/2), 1.0, 1.0, 1.0,
+                    x+(size/2), y+(size/2), z-(size/2), 1.0, 1.0, 1.0,
                     x-(size/2), y+(size/2), z-(size/2), 1.0, 1.0, 1.0]
 
         indices = [0, 1, 2, 2, 3, 0,

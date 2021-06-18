@@ -34,7 +34,6 @@ async def command(ws):
 async def handler(websocket, path):
   try:
     connected.add(websocket)
-    counter = 0
     async for message in websocket:
       if is_json(message):
         pyobj = json.loads(message)
@@ -44,10 +43,8 @@ async def handler(websocket, path):
       for conn in connected:
         if conn != websocket:
           await conn.send(message)
-        await command(websocket)
-      counter += 1
+        #await command(websocket)
   except Exception as ex:
-      connected.remove(websocket)
       print(ex)
 
 

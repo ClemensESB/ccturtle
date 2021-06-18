@@ -1,11 +1,11 @@
 _G.shell = shell
-local myURL = "ws://66568dd80de6.ngrok.io:80"
+local myURL = "ws://localhost:2256"
 VERSION = "1.16"
 FACEING = 0
 POSITION = vector.new(0,0,0)
 HOME = vector.new(0,0,0)
 _G.GLOB_FUNC = {
-    turn = function(direction)
+turn = function(direction)
     direction = tonumber(direction)
 	local turnDirection = direction % 4
 	local n = FACEING - turnDirection
@@ -31,27 +31,35 @@ _G.GLOB_FUNC = {
 		return false
 	end
 	FACEING = turnDirection
-	return true
+	return {["faceing"] = FACEING}
 end,
-
-    getSidePosition = function(face)
+turnDirect = function (side)
+	print(side)
+	local face = FACEING
+	if side == "left" then
+		return GLOB_FUNC.turn((face-1)%4)
+	elseif side == "right" then
+		return GLOB_FUNC.turn((face+1)%4)
+	end
+end,
+getSidePosition = function(face)
     face = tonumber(face)
 	local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
 	local vectorX = vector.new(1,0,0)
 	local vectorY = vector.new(0,1,0)
 	local vectorZ = vector.new(0,0,1)
 	if face == 0 then --north
-		erg = erg + vectorY
+		erg = erg - vectorZ
 	elseif	face == 2 then --south
-		erg = erg - vectorY
+		erg = erg + vectorZ
 	elseif	face == 3 then --west
 		erg = erg - vectorX
 	elseif	face == 1 then --east
 		erg = erg + vectorX
 	elseif	face == 4 then --up
-		erg = erg + vectorZ
+		erg = erg + vectorY
 	elseif	face == 5 then --down
-		erg = erg - vectorZ
+		erg = erg - vectorY
 	else
 		erg = false
 	end
@@ -62,61 +70,76 @@ move = function (direction)
 	if direction == "up" then
 		if turtle.up() then
 			POSITION.y = POSITION.y+1
-			return true
+			return GLOB_FUNC.getPosition()
 		end
 	elseif direction == "down" then
 		if turtle.down() then
 			POSITION.y = POSITION.y-1
-			return true
+			return GLOB_FUNC.getPosition()
 		end
 	elseif direction == "forward" then
 		if FACEING == 0 then
 			if turtle.forward() then
 				POSITION.z = POSITION.z-1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 1 then
 			if turtle.forward() then
 				POSITION.x = POSITION.x+1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 2 then
 			if turtle.forward() then
 				POSITION.z = POSITION.z+1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 3 then
 			if turtle.forward() then
 				POSITION.x = POSITION.x-1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		end
 	elseif direction == "back" then
 		if FACEING == 0 then
-			if turtle.forward() then
+			if turtle.back() then
 				POSITION.z = POSITION.z+1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 1 then
-			if turtle.forward() then
+			if turtle.back() then
 				POSITION.x = POSITION.x-1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 2 then
-			if turtle.forward() then
+			if turtle.back() then
 				POSITION.z = POSITION.z-1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		elseif FACEING == 3 then
-			if turtle.forward() then
+			if turtle.back() then
 				POSITION.x = POSITION.x+1
-				return true
+				return GLOB_FUNC.getPosition()
 			end
 		end
 	end
+	return false
 end,
 getPosition = function()
-	local erg = {POSITION.x,POSITION.y,POSITION.z}
+	local erg = {["position"] = vector.new(POSITION.x,POSITION.y,POSITION.z),["faceing"] = FACEING}
+	return erg
+end,
+inspect = function(side)
+	local erg = {["block"] = 0,["position"]=0}
+	if side == "up" then
+		erg["position"]=GLOB_FUNC.getSidePosition(4)
+		erg["block"]={turtle.inspectUp()}
+	elseif side == "down" then
+		erg["position"]=GLOB_FUNC.getSidePosition(5)
+		erg["block"]={turtle.inspectDown()}
+	elseif side == "front" then
+		erg["position"]=GLOB_FUNC.getSidePosition(FACEING)
+		erg["block"]={turtle.inspect()}
+	end
 	return erg
 end
 }
@@ -132,7 +155,7 @@ function NET.connect(force)
 		-- If we already have a socket and are throwing it away, close old one.
 		if NET.socket then NET.socket.close() end
 		local sock = http.websocket(NET.server)
-		if not sock then error "NET server unavailable, broken or running newer protocol version." end
+		if not sock then return "NET server unavailable, broken or running newer protocol version." end
 		NET.socket = sock
 	end
 end
@@ -141,9 +164,16 @@ function NET.send(data)
     data = textutils.serializeJSON(data)
     NET.socket.send(data)
 end
-function NET.receive()
+function NET.receive(timeout)
     NET.connect()
-    NET.messageq = textutils.unserializeJSON(NET.socket.receive())
+    local message = NET.socket.receive(timeout)
+	--local obj,err = textutils.unserializeJSON(message)
+	--if err == nil and obj ~= nil then
+		--return obj
+	--else 
+	--	return nil
+	--end
+	return message
 end
 function NET.close()
     if NET.socket then NET.socket.close() end
@@ -154,12 +184,25 @@ function print_r(array)
 	end
 end
 
-
-NET.send("connection established")
+local label = os.getComputerLabel()
+repeat
+	local okest,msgest = pcall(NET.send,label)
+until okest
+---if not okest then
+--	os.reboot()
+--end
+os.sleep(1)
 while true do
+	local msgok,message =  nil,nil
     repeat
-    event, url, message = os.pullEvent("websocket_message")
-    until url == myURL
+		os.sleep(0.1)
+		msgok,message = pcall(NET.receive,5)
+		if message == "client.lua:169: attempt to use a closed file" then
+			os.reboot()
+		end
+    --event, url, message = os.pullEvent("websocket_message")
+    --until url == myURL
+	until msgok == true and message ~= nil
     local msg = message
     local obj,erro = textutils.unserializeJSON(msg)
     local func,err
