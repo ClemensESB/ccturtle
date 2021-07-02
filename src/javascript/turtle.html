@@ -2,34 +2,114 @@
 <html lang="de">
 
 <head>
+    <style>
+    .show{
+        font-size: large;
+        border:1px;
+        border-radius: 5px;
+        border-style: solid;
+        border-color: black;
+        color: orange;
+        background-color: rgb(63, 54, 54);
+        width: 100px;
+        cursor: default;
+        overflow: hidden;
+        text-align: center;
+        float: left;
+    }
+    .show:hover ul.list-categories{
+        width: 100px;
+        max-height: inherit;
+        opacity: 1;
+        cursor: default;
+        overflow: hidden;
+        position: absolute;
+    }
+
+    .list-categories{
+        width: 100px;
+        list-style-type: none;
+        padding: 0px;
+        margin: 0px;
+        max-height: 0px;
+        opacity: 0;
+        overflow: hidden;
+        transition: opacity 300ms ease;
+        cursor: default;
+        background-color: rgb(63, 54, 54);
+        color:orange;
+        text-align: center;
+    }
+    .list-categories li:hover{
+        width: 100px;
+        background-color: blue;
+        cursor: pointer;
+        overflow: hidden;
+        padding: 1px;
+    }
+    .float-left{
+        float: right;
+    }
+    </style>
     <meta charset="UTF8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turtle</title>
 </head>
-
 <body>
     <h1>Turtle websocket Client</h1>
-    <button id="forward">forward</button>
-    <button id="back">back</button>
-    <button id="insert">insert</button>
-    <button id="select">select</button>
-    <button id="inspectUp">inspectUp</button>
-    <button id="inspect">inspect</button>
-    <button id="inspectDown">inspectDown</button>
-    <button id="left">turnLeft</button>
-    <button id="right">turnRight</button>
+    <div class="show">graben
+        <ul class="list-categories">
+            <li id="grUp">oben</li>
+            <li id="grMid">mitte</li>
+            <li id="grBot">unten</li>
+        </ul>
+    </div>
+    <div class="show">behälter öffnen
+        <ul class="list-categories">
+            <li id="yoinkUp">oben</li>
+            <li id="yoinkMid">mitte</li>
+            <li id="yoinkBot">unten</li>
+        </ul>
+    </div>
+    <div>auftanken</div>
+    <div>
+        <input class="float-left" type="text" id="custCom">
+    </div>
+    <span id="tooltip-span" title="regular tooltip">Hover me</span>
 </body>
 <script src="./3d/node_modules/three/build/three.min.js"></script>
 <script src="./3d/node_modules/three/examples/js/controls/TrackballControls.js"></script>
 <script>
-    
-    //import * as THREE from "./3d/node_modules/three/build/three.js"
-    //import { TrackballControls } from './3d/node_modules/three/examples/jsm/controls/TrackballControls'
-    let camera, controls, scene, renderer;
+
+    let camera, controls, scene, renderer,raycaster,key;
+    let INTERSECTED;
+    const mouse = new THREE.Vector2();
     var device = [];
     var position = new THREE.Vector3(0.0, 0.0, 0.0);
+    var cooldown = 0;
+    const connectedTo = "Jhin Khada";
+    //----------tooltip
+    //test
+    const grUp = document.getElementById("grUp");
+    grUp.onclick = function(){
+        console.log(grUp);
+    };
+    //const grMid = document.getElementById("grMid");
+    //const grBot = document.getElementById("grBot");
+
+    //grUp.addEventListener("Click",()=>{
+    //    console.log(list[0].children);
+    //});
+    
+    //----------end
+    function Message(message, receiver = null, sender = "Client"){
+        this.sender = sender;
+        this.receiver = receiver;
+        this.data = message;
+    }
+
     //boxes
-    function CustBox(x, y, z, color) {
+    function CustBox(x, y, z, color,id) {
         geometry = new THREE.BoxGeometry(1, 1, 1);
         meshmaterial = new THREE.MeshBasicMaterial({ color: color });
         meshmaterial.transparent = true;
@@ -43,6 +123,8 @@
         this.mesh.position.x = x;
         this.mesh.position.y = y;
         this.mesh.position.z = z;
+        this.mesh.customData = id;
+        this.line.customData = id;
     }
     init();
     animate();
@@ -56,19 +138,32 @@
         //camera.staticMoving = true;
         //szene
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xcccccc);
+        scene.background = new THREE.Color(0xa6defc);
 
         //renderer
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth -80, window.innerHeight -120);
         document.body.appendChild(renderer.domElement);
+        var canvas = document.getElementsByTagName("canvas");
+        console.log(canvas);
         //resize
         window.addEventListener('resize', onWindowResize);
         createControls(camera);
-    }
-    
+        raycaster = new THREE.Raycaster()
 
+        window.addEventListener('keydown', function (e) {
+            key = e.keyCode;
+        })
+        window.addEventListener('keyup', function (e) {
+            key = false;
+        })
+    }
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    }
     function onWindowResize() {
         const aspect = window.innerWidth/ window.innerHeight;
         camera.aspect = aspect;
@@ -85,23 +180,98 @@
         controls.maxDistance = 20;
 
         controls.target = position;
-        //controls.keys = ['KeyA', 'KeyS', 'KeyD'];
+        controls.keys = ['', '', ''];
 
     }
     function animate() {
         requestAnimationFrame(animate);
         controls.target = position;
         controls.update();
-        
+        if(cooldown > 0){
+            cooldown--;
+        }
+        if(key && cooldown == 0){
+          switch (key) {
+            case 87: //W
+                forward();
+            break;
+            case 68: //D
+                right();
+            break;
+            case 65://A
+                left();
+            break;
+            case 83://S
+                back();
+            break;
+            case 32://"leer"
+                up();
+            break;
+            case 67://C
+                down();
+            break;
+            case 69://E
+
+            break;
+            case 81://Q
+
+            break;
+            default:
+            break;
+          }
+          //12 strg 
+        //73 I
+            cooldown = 60;
+        }
         //camera.lookAt(position);
         render();
         
     }
-
+    //tooltip
     
 
+    function setTooltip(text) {
+        var tooltipSpan = document.getElementById('tooltip-span');
+
+        window.onmousemove = function (e) {
+            var x = e.clientX,
+                y = e.clientY;
+            tooltipSpan.style.top = (y + 20) + 'px';
+            tooltipSpan.style.left = (x + 20) + 'px';
+        };
+        if(text == ""){
+            tooltipSpan.innerHTML = text;
+            tooltipSpan.style.display = "hidden";
+        }else{
+            tooltipSpan.innerHTML = text;
+            tooltipSpan.style.display = "block";
+            tooltipSpan.style.position = "fixed";
+            tooltipSpan.style.overflow = "hidden";
+        }
+    }
+    //tooltipSpan.innerHTML = value.object.customData;
+    //tooltipSpan.style = "display:block; position: fixed; overflow: hidden;"
+    //end
+    
+    window.addEventListener('mousemove', onMouseMove, false);
+
     function render() {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children);
+        var tooltip = document.getElementById('tooltip');
+        intersects.forEach((value,index)=>{
+            if (value.object.type == "Mesh") {
+                //tooltip.innerHTML = value.object.customData;
+                setTooltip(value.object.customData);
+            }
+        });
+        
+        if(intersects.length <= 0){
+            //tooltipSpan.style = "display:hidden;"
+            setTooltip("");
+        }
         renderer.render(scene, camera);
+        
     }
 
     function hashCode(str) { // java String#hashCode
@@ -119,119 +289,141 @@
 
         return "00000".substring(0, 6 - c.length) + c;
     }
-
-    function alreadyMapped(boxes,obj){
-        let flag = false;
-        boxes.forEach((item,index)=>{
-            //console.log(item);
-            //console.log(obj);
-            if(obj.mesh.position.x == item.position.x && obj.mesh.position.y == item.position.y && obj.mesh.position.z == item.position.z){
-                //console.log("boxes",boxes);
-                //console.log("item", item);
-                //console.log("index", index);
-                //console.log("object",obj);
-                flag = true;
-            }
-        });
-        return flag;
-    }
-    var inspectDown = document.getElementById("inspectDown");
-    var inspectUp = document.getElementById("inspectUp");
-    var inspect = document.getElementById("inspect");
-    var forward = document.getElementById("forward");
-    var backward = document.getElementById("back");
-    var insert = document.getElementById("insert");
-    var select = document.getElementById("select");
-    var left = document.getElementById("left");
-    var right = document.getElementById("right");
-
+    //---------- Websocket
     const ws = new WebSocket("ws://localhost:2256");
     ws.addEventListener("open", () => {
         console.log("we are connected");
+        send("connected");
     });
-
+    //---------- controls for turtle
     var inspectf = async function (side) {
         let promise = new Promise((resolve, reject) => {
             setTimeout(() => resolve("done!"), 300)
         });
         await promise.then(value => {
-            ws.send('{"func":"return GLOB_FUNC.inspect(\\\"' + side + '\\\")"}');
+            send('return GLOB_FUNC.inspect(\"' + side + '\")', connectedTo);
         }, reason => {
             console.error(reason);
         });
     }
-    inspectDown.addEventListener("click", async () => {
-        await inspectf("down");
-    });
-    inspectUp.addEventListener("click", async () => {
-        await inspectf("up");
-    });
-    inspect.addEventListener("click", async () => {
-        await inspectf("front");
-    });
-    forward.addEventListener("click", async () => {
-        ws.send('{"func":"return GLOB_FUNC.move(\\\"forward\\\")"}');
-        await inspectf("down");
-        await inspectf("up");
-        await inspectf("front");
-    });
-    backward.addEventListener("click", () => {
-        ws.send('{"func":"return GLOB_FUNC.move(\\\"back\\\")"}');
-    });
-    insert.addEventListener("click", () => {
-        ws.send('{"db":"INSERT INTO devices (turtleName) VALUES (\\\"\\\")"}');
-    });
-    select.addEventListener("click", () => {
-        ws.send('{"db":"select * FROM position"}');
-    });
 
-    right.addEventListener("click", async () => {
-        ws.send('{"func":"return GLOB_FUNC.turnDirect(\\\"right\\\")"}');
+    async function forward() {
+        send('return GLOB_FUNC.move(\"forward\")', connectedTo);
+        await inspectf("down");
+        await inspectf("up");
         await inspectf("front");
-    });
-    left.addEventListener("click", async () => {
-        ws.send('{"func":"return GLOB_FUNC.turnDirect(\\\"left\\\")"}');
+    };
+    async function back() {
+        send('return GLOB_FUNC.move(\"back\")', connectedTo);
+        await inspectf("down");
+        await inspectf("up");
+    }
+    async function up() {
+        send('return GLOB_FUNC.move(\"up\")', connectedTo);
+        await inspectf("up");
         await inspectf("front");
-    });
+    };
+    async function down() {
+        send('return GLOB_FUNC.move(\"down\")', connectedTo);
+        await inspectf("down");
+        await inspectf("front");
+    };
+    async function right(){
+        send('return GLOB_FUNC.turnDirect(\"right\")', connectedTo);
+        await inspectf("front");
+    };
+    async function left(){
+        send('return GLOB_FUNC.turnDirect(\"left\")', connectedTo);
+        await inspectf("front");
+    };
+    //----------- end controls for turtle
+    //----------- update blocks
+    function addBlock(box,meshOnly = false){
+        if(!meshOnly){
+            scene.add(box.line);
+        }
+        scene.add(box.mesh);
+    }
+    function deleteBlock(x,y,z){
+        scene.children.forEach((item,index)=>{
+            if(item.position.x == x && item.position.y == y && item.position.z == z){
+                scene.remove(item);
+            }
+        });
+        scene.children.forEach((item, index) => {
+            if (item.position.x == x && item.position.y == y && item.position.z == z) {
+                scene.remove(item);
+            }
+        });
+    }
+    function updateBlock(x,y,z,box){
+        deleteBlock(x,y,z);
+        addBlock(box);
+    }
+    function alreadyMapped(boxes,x,y,z) {
+        let flag = false;
+        boxes.forEach((item, index) => {
+            if (x == item.position.x && y == item.position.y && z == item.position.z) {
+                flag = true;
+            }
+        });
+        return flag;
+    }
+    function getSceneBlock(x,y,z){
+        var boxes = [];
+        scene.children.forEach((item, index)=>{
+            if (x == item.position.x && y == item.position.y && z == item.position.z) {
+                boxes.push(item);
+            }
+        });
+        return boxes;
+    }
+
+
+    //----------- end update blocks
+    async function send(sender = "client",receiver,data) {
+        var data = new Message(sender, receiver, data);
+        data = JSON.stringify(data);
+        await ws.send(data);
+    }
+
 
     ws.addEventListener("message", (data) => {
-        //console.log("data",data);
-        var first = data.data.indexOf("{");
-        var last = data.data.lastIndexOf("}");
-        //console.log(first);
-        var temp = data.data.slice(first, last+1);
-        temp = temp.replace(/\\/g, "");
-        //console.log(temp);
-        if(temp != ""){
-            var obj = JSON.parse(temp);
-        }
-        console.log(obj);
-        //console.log(JSON.parse(data[1]));
-        if(obj.block!== undefined && obj.block[0]){
-            const box = new CustBox(obj.position.x, obj.position.y, obj.position.z,new THREE.Color("#"+intToRGB(hashCode(obj.block[1].name))));
-            if (alreadyMapped(scene.children,box)) {
-                //console.log("scene.children");
-            }else{
-                scene.add(box.mesh);
-                scene.add(box.line);
-            }
-            //console.log(scene.children);
-            //scene.remove(box.line);
-        }if (obj.faceing !== undefined) {
-            if(obj.position!== undefined){
-                var lastPos = device.pop();
-                if (lastPos !== undefined && alreadyMapped(scene.children, lastPos)) {
-                    //scene.remove(box.line);
-                    scene.remove(lastPos.mesh);
+        var obj = JSON.parse(data.data);
+        //console.log(obj);
+        if((obj.sender == connectedTo || obj.sender == "db") && obj.receiver == "Client"){
+            if(obj.data[0] === false){
+                console.log("error on Client side");
+            }else if(obj.data[1] !== false){
+                if(obj.data[1].faceing !== undefined){
+                    if (obj.data[1].position !== undefined) {
+                        var lastPos = device.pop();
+                        if (lastPos !== undefined) {
+                            deleteBlock(lastPos.mesh.position.x, lastPos.mesh.position.y, lastPos.mesh.position.z);
+                        }
+                        position = new THREE.Vector3(obj.data[1].position.x, obj.data[1].position.y, obj.data[1].position.z);
+                        const turtle = new CustBox(position.x, position.y, position.z, 0x0000FF);
+                        device.push(turtle);
+                        addBlock(turtle, true);
+                    }
                 }
-                position = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-                const turtle = new CustBox(position.x, position.y, position.z, 0x0000FF);
-                device.push(turtle);
-                console.log(position);
-                scene.add(turtle.mesh);
+                if (obj.data[1].block !== undefined && obj.data[1].block[0] == true) {
+                    const box = new CustBox(obj.data[1].position.x, obj.data[1].position.y, obj.data[1].position.z, new THREE.Color("#" + intToRGB(hashCode(obj.data[1].block[1].name))), obj.data[1].block[1].name);
+                    if (alreadyMapped(scene.children, box.mesh.position.x, box.mesh.position.y, box.mesh.position.z)) {
+                        var sceneChild = getSceneBlock(box.mesh.position.x, box.mesh.position.y, box.mesh.position.z);
+                        if (box.mesh.customData != sceneChild.pop().customData) {
+                            updateBlock(box.mesh.position.x, box.mesh.position.y, box.mesh.position.z, box);
+                        }
+                    } else {
+                        addBlock(box);
+                    }
+                    
+                } else if(obj.data[1].block !== undefined && obj.data[1].block[0] == false) {
+                    if (alreadyMapped(scene.children, obj.data[1].position.x, obj.data[1].position.y, obj.data[1].position.z)) {
+                        deleteBlock(obj.data[1].position.x, obj.data[1].position.y, obj.data[1].position.z);
+                    }
+                }
             }
-        } else {
-            
         }
     });
 

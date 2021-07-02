@@ -4,6 +4,8 @@ const mysql = require('mysql');
 const wss = new WebSocket.Server({port : 2256});
 
 
+var clients = new Object();
+
 var con = mysql.createConnection({
     host: "localhost",
     user: "turtle",
@@ -20,10 +22,15 @@ con.connect(function (err) {
 
 wss.on("connection", ws =>{
     console.log("new Client connected!")
-
     ws.on("message",data=>{
+        //console.log(data.data);
+        //clients[data.]
         console.log(`client send ${data}`);
         var sentObj = JSON.parse(data);
+        if (sentObj.data == "connected") {
+            clients[sentObj.sender] = ws;
+        }
+        //console.log(clients);
         //console.log(sentObj.db);
         if(sentObj.db !== undefined){
             con.query(sentObj.db,function(err,result,fields){
@@ -32,11 +39,9 @@ wss.on("connection", ws =>{
                 ws.send(JSON.stringify(result));
             });
         }else{
-            wss.clients.forEach(function each(client) {
-                if (client != ws && client.readyState == WebSocket.OPEN) {
-                    client.send(data);
-                }
-            });
+            if (clients[sentObj.receiver] !== undefined && clients[sentObj.receiver].readyState == WebSocket.OPEN) {
+                clients[sentObj.receiver].send(data);
+            }
         }
     });
     

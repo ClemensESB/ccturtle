@@ -4,6 +4,14 @@ VERSION = "1.16"
 FACEING = 0
 POSITION = vector.new(0,0,0)
 HOME = vector.new(0,0,0)
+LABEL = os.getComputerLabel()
+
+MESSAGE = {
+	sender = LABEL,
+	receiver = "Client",
+	data = nil
+}
+
 _G.GLOB_FUNC = {
 turn = function(direction)
     direction = tonumber(direction)
@@ -34,7 +42,7 @@ turn = function(direction)
 	return {["faceing"] = FACEING}
 end,
 turnDirect = function (side)
-	print(side)
+	--print(side)
 	local face = FACEING
 	if side == "left" then
 		return GLOB_FUNC.turn((face-1)%4)
@@ -161,7 +169,9 @@ function NET.connect(force)
 end
 function NET.send(data)
     NET.connect()
-    data = textutils.serializeJSON(data)
+	MESSAGE.data = data
+    data = textutils.serializeJSON(MESSAGE)
+	--print(MESSAGE)
     NET.socket.send(data)
 end
 function NET.receive(timeout)
@@ -184,9 +194,10 @@ function print_r(array)
 	end
 end
 
-local label = os.getComputerLabel()
+
+
 repeat
-	local okest,msgest = pcall(NET.send,label)
+	local okest,msgest = pcall(NET.send,"connected")
 until okest
 ---if not okest then
 --	os.reboot()
@@ -205,29 +216,32 @@ while true do
 	until msgok == true and message ~= nil
     local msg = message
     local obj,erro = textutils.unserializeJSON(msg)
-    local func,err
-	local erg ={}
-    if erro == nil and obj ~= nil then
-        func,err = load(obj["func"])
-        if func ~= nil then
-            local ok = {pcall(func)}
-            if ok[1] then
-				print_r(ok)
-				for k,v in pairs(ok) do
-					table.insert(erg,k,v)
+	if obj.receiver == LABEL then
+		local func,err
+		local erg ={}
+		if erro == nil and obj ~= nil then
+			print_r(obj)
+			func,err = load(obj.data)
+			if func ~= nil then
+				local ok = {pcall(func)}
+				if ok[1] then
+					--print_r(ok)
+					for k,v in pairs(ok) do
+						table.insert(erg,k,v)
+					end
+				else
+					print("Execution error:", func)
 				end
-            else
-                print("Execution error:", func)
-            end
-        else
-            print("Compilation error:")
-        end
-    else
-        err = true
-    end
-    if erg ~= nil then
-        print(textutils.serializeJSON(erg))
-        NET.send(textutils.serializeJSON(erg)) 
-    end
+			else
+				print("Compilation error:")
+			end
+		else
+			err = true
+		end
+		if erg ~= nil then
+			--print(textutils.serializeJSON(erg))
+			NET.send(erg) 
+		end
+	end
 end
 NET.close()
