@@ -228,8 +228,6 @@
         
     }
     //tooltip
-    
-
     function setTooltip(text) {
         var tooltipSpan = document.getElementById('tooltip-span');
 
@@ -281,7 +279,6 @@
         }
         return hash;
     }
-
     function intToRGB(i) {
         var c = (i & 0x00FFFFFF)
             .toString(16)
@@ -336,6 +333,33 @@
         send('return GLOB_FUNC.turnDirect(\"left\")', connectedTo);
         await inspectf("front");
     };
+    
+    async function dig(direction){
+        send('return turtle.dig'+direction+"()",connectedTo);
+        if(direction === ""){
+            await inspectf("front");
+        }else{
+            await inspectf(direction.toLowerCase());
+        }
+    };
+
+
+    var digUp = document.getElementById("grUp");
+    var digFront = document.getElementById("grMid");
+    var digDown = document.getElementById("grBot");
+    digUp.addEventListener("click",function() {
+        console.log("digging");
+        dig("Up");
+    });
+    digFront.addEventListener("click",function() {
+        dig("");
+    });
+    digDown.addEventListener("click", function () {
+        dig("Down");
+    });
+
+
+    
     //----------- end controls for turtle
     //----------- update blocks
     function addBlock(box,meshOnly = false){
@@ -378,9 +402,8 @@
         });
         return boxes;
     }
-
-
     //----------- end update blocks
+    //----------- send messages
     async function send(sender = "client",receiver,data) {
         var data = new Message(sender, receiver, data);
         data = JSON.stringify(data);
