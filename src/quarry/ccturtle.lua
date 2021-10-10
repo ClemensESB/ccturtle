@@ -15,13 +15,12 @@ HOME = vector.new(0,0,0)
 -- // --- will be kept in inventory ---
 ITEMS = {
 	["chests"] = {
-		["enderChest16"] = "enderchests:ender_chest",
-		["enderChest12"] = "enderstorage:ender_storage",
-		["shulkerChest16"] = "minecraft:shulker_box",
-		["shulkerChest12"] = "minecraft:purple_shulker_box",
+		["modChest16"] = "enderchests:ender_chest",
+		["modChest12"] = "enderstorage:ender_storage",
+		["vanillaChest16"] = "minecraft:shulker_box",
+		["vanillaChest12"] = "minecraft:purple_shulker_box",
 		["immersiveChest12"] = "immersiveengineering:wooden_device0",
-		["immersiveChest16"] = "immersiveengineering:crate",
-		["mekanismChest16"] = "mekanism:personal_chest"
+		["immersiveChest16"] = "immersiveengineering:crate"
 	},
 	["pickaxe"] = "minecraft:diamond_pickaxe",
 	["modemNormal"] = "computercraft:wireless_modem_normal",
@@ -496,14 +495,14 @@ function main(hasArgs)
 	refuel()
 	if not hasArgs then
 		print("height")
-		local EBN = read()
-		local EBN = tonumber(EBN)
+		EBN = read()
+		EBN = tonumber(EBN)
 		print("length of tunnel:")
-		local LEN = read()
-		local LEN = tonumber(LEN)
+		LEN = read()
+		LEN = tonumber(LEN)
 		print("length of branches:")
-		local LENG = read()
-		local LENG = tonumber(LENG)
+		LENG = read()
+		LENG = tonumber(LENG)
 	else
 		print("start script with z:"..EBN.." y:"..LEN.." x:"..LENG)
 	end
@@ -516,9 +515,6 @@ function main(hasArgs)
 	if chest == -1 then
 		print("no listed chest detected please provide chest or make")
 	end
-	
-	
-
 
 	local schachtStack = posStack:create()
 	local gangStack = posStack:create()
