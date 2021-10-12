@@ -375,7 +375,6 @@ function scanSide(side)
 	else
 		return false
 	end
-
 	return success,erg
 end
 
