@@ -75,6 +75,34 @@
     <div>
         <input class="float-left" type="text" id="custCom">
     </div>
+    <div id="inventar">
+        <table>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
     <span id="tooltip-span" title="regular tooltip">Hover me</span>
 </body>
 <script src="./3d/node_modules/three/build/three.min.js"></script>
@@ -348,7 +376,6 @@
     var digFront = document.getElementById("grMid");
     var digDown = document.getElementById("grBot");
     digUp.addEventListener("click",function() {
-        console.log("digging");
         dig("Up");
     });
     digFront.addEventListener("click",function() {
