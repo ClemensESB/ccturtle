@@ -85,6 +85,10 @@ end
 function posStack:getIndex()
 	return self.index
 end
+function posStack:getByIndex(i)
+	return self.entry[i]
+end
+
 -- nützliche logik
 function inArray(needle,haystack)
 	for key,value in pairs(haystack) do
@@ -436,6 +440,34 @@ end
 -- end of mining functions
 
 -- start Job functions input of target location
+function directionOfPoint(point)
+	if point.x < POSITION.x and point.z > POSITION.z then
+		-- south 0
+		print("south")
+		turn(0)
+		return true
+	elseif point.x > POSITION.x and point.z > POSITION.z then
+		-- east 3
+		turn(3)
+		print("east")
+		return true
+	elseif point.x > POSITION.x and point.z < POSITION.z then
+		-- north 2
+		turn(2)
+		print("north")
+		return true
+	elseif point.x < POSITION.x and point.z < POSITION.z then
+		-- west 1
+		turn(1)
+		print("west")
+		return true
+	else
+		-- looking in wrong direction
+		return false
+	end
+end
+
+
 function buildJob(x,y,z)
 	setPosition()
 	local targetVector = vector.new(x,y,z)
@@ -453,6 +485,16 @@ function buildJob(x,y,z)
 			jobStack:push(pushPos)
 		end
 	end
+	for i=1,jobStack.getIndex() do
+		local firstPos = jobStack:getByIndex(i)
+		distance = distance(firstPos,vector.new())
+	end
+	
+
+
+
+
+
 	local file = io.open("job","w")
 	while not jobStack:isempty() do
 		local vec = jobStack:pop():tostring()
@@ -466,18 +508,20 @@ end
 
 
 function main(x,y,z)
-	if x == 0 and y == 0 and z == 0 then
+	if x == nil and y == nil and z == nil then
 		error("please use ccturtleVan x y z",1)
 	end
     setHome()
 	setDirection()
 	turtle.back()
-	buildJob(x,y,z)
-
+	setPosition()
+	--buildJob(x,y,z)
+	local succ = directionOfPoint(vector.new(x,y,z))
+	print(succ)
 end
 
 if #arg == 3 then
 	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]))
 else
-	main(0,0,0)
+	main(nil,nil,nil)
 end
