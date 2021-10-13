@@ -8,7 +8,8 @@ POSITION = nil
 FACING = nil
 HOME = {
 	position = nil,
-	facing = nil
+	facing = nil,
+	path = {}
 }
 
 
@@ -84,7 +85,7 @@ end
 function posStack:getIndex()
 	return self.index
 end
-
+-- nützliche logik
 function inArray(needle,haystack)
 	for key,value in pairs(haystack) do
 		if needle == value then
@@ -131,7 +132,12 @@ function print_r(array)
 		print("#i"..tostring(v))
 	end
 end
-
+-- math functions
+function distance(a,b)
+	local d = math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z))
+	return d
+end
+-- turtle functions
 function refuel()
 	local fuelLevel = turtle.getFuelLevel()
 	local fuel = -1
@@ -387,20 +393,91 @@ function scan(lookBack)
 	turn(temp)
 	return a,ergTable
 end
--- end of control block
 
-function main(hasArgs)
+function goHome()
+	move(HOME.position)
+end
+
+-- end of control block
+-- start of mining functions
+function fillOreStack(workStack,scanTable)
+	for index,value in pairs(scanTable) do
+		if value ~= nil then
+			local orePos = vector.new(value.x,value.y,value.z)
+			if not workStack:inStack(orePos) then
+				workStack:push(orePos)
+			end
+		end
+	end
+	return workStack
+end
+
+
+function mineVein()
+	setPosition()
+	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
+	local direction = FACING
+	local orePosStack = posStack:create()
+	local succ,scanTable = scan(false)
+	orePosStack = fillOreStack(orePosStack,scanTable)
+	repeat
+		if not orePosStack:isempty() then
+			move(orePosStack:pop())
+		end
+		local succ,scanTable = scan(false)
+		orePosStack = fillOreStack(orePosStack,scanTable)
+	until orePosStack:isempty()
+	move(start)
+	turn(direction)
+	return true
+end
+
+
+-- end of mining functions
+
+-- start Job functions input of target location
+function buildJob(x,y,z)
+	setPosition()
+	local targetVector = vector.new(x,y,z)
+	local jobStack = posStack:create()
+	-- tiefe
+	local distance = distance(POSITION,vector.new(POSITION.x,y,POSITION.z))
+	for i=0,distance do
+		if i % 4 == 0 or i % 4 == 3 then
+			local pushPos = nil
+			if y < POSITION.y then
+				pushPos = vector.new(POSITION.x,POSITION.y-i,POSITION.z)
+			else
+				pushPos = vector.new(POSITION.x,POSITION.y+i,POSITION.z)
+			end
+			jobStack:push(pushPos)
+		end
+	end
+	local file = io.open("job","w")
+	while not jobStack:isempty() do
+		local vec = jobStack:pop():tostring()
+		file:write(vec,"\n")
+	end
+	file:close()
+end
+
+
+-- end job functions
+
+
+function main(x,y,z)
+	if x == 0 and y == 0 and z == 0 then
+		error("please use ccturtleVan x y z",1)
+	end
     setHome()
 	setDirection()
 	turtle.back()
+	buildJob(x,y,z)
 
 end
 
 if #arg == 3 then
-	EBN = arg[1]
-	LEN = arg[2]
-	LENG = arg[3]
-	main(true)
+	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]))
 else
-	main(false)
+	main(0,0,0)
 end
