@@ -1,6 +1,16 @@
--- benutzt vanilla chest idee slave der die erze trägt
+-- erzerkennung +
+-- gps anbindung (kein internes gps ~ fucked ohne externes gps) +
+-- bruteforceing durch wände +
+-- automatisches auftanken +
+-- arbeitsstop bei vollem inventar +
+-- berechnen von relativen blockpositionen +
+-- berechnen von rechteck koordinaten für mienenschächte +
+-- automatisches ausrichten der turtle für eine mining operation +
+-- 
+
+-- benutzt vanilla chest idee slave der die erze trägt 
 -- Homeing durch gänge
--- speichern des systems als graph
+-- speichern des systems als graph (angefangen)
 
 
 VERSION = "1.16"
@@ -202,6 +212,7 @@ end
 
 function setHome()
     local x,y,z = gps.locate(1)
+	POSITION = vector.new(x,y,z)
     HOME.position = vector.new(x,y,z)
 end
 
@@ -397,7 +408,10 @@ function scan(lookBack)
 	turn(temp)
 	return a,ergTable
 end
-
+--local chest = peripheral.find("minecraft:chest")
+--for slot, item in pairs(chest.list()) do
+--	print(("%d x %s in slot %d"):format(item.count, item.name, slot))
+--end
 function goHome()
 	move(HOME.position)
 end
@@ -415,7 +429,6 @@ function fillOreStack(workStack,scanTable)
 	end
 	return workStack
 end
-
 
 function mineVein()
 	setPosition()
@@ -463,10 +476,10 @@ function directionOfPoint(point)
 	end
 end
 
-function calcExpectedPosition(distanceVector)
+function calcExpectedPosition(startPosition,distanceVector)
 	-- (1,1,1)
 	local direction = FACING
-	local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
+	local erg = vector.new(startPosition.x,startPosition.y,startPosition.z)
 	if distanceVector.y >= 0 then
 		erg.y = erg.y + distanceVector.y
 	else
@@ -500,28 +513,31 @@ function calcExpectedPosition(distanceVector)
 	return erg
 end
 
+function getRectangleKoords(startPoint,length)
+	local erg = {startPoint}
+	erg[2] = calcExpectedPosition(startPoint,vector.new(length,0,0))
+	erg[3] = calcExpectedPosition(startPoint,vector.new(length,1,0))
+	erg[4] = calcExpectedPosition(startPoint,vector.new(0,1,0))
+	return erg
+end
 
-function buildJob(x,y,z)
+
+function buildJob(startPoint,endPoint) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
 	setPosition()
-	local targetVector = vector.new(x,y,z)
 	local jobStack = posStack:create()
 	-- tiefe
-	local distance = distance(POSITION,vector.new(POSITION.x,y,POSITION.z))
-	for i=0,distance do
-		if i % 4 == 0 or i % 4 == 3 then
-			local pushPos = nil
-			if y < POSITION.y then
-				pushPos = vector.new(POSITION.x,POSITION.y-i,POSITION.z)
-			else
-				pushPos = vector.new(POSITION.x,POSITION.y+i,POSITION.z)
+	local height = startPoint.y - endPoint.y -- verticale tiefe der operation
+	--local depth = 
+
+	for i = 0, height do
+		if i % 3 == 0 then
+			for j = 1, 10, 1 do
+				-- hmm
 			end
-			jobStack:push(pushPos)
 		end
 	end
-	for i=1,jobStack.getIndex() do
-		local firstPos = jobStack:getByIndex(i)
-		distance = distance(firstPos,vector.new())
-	end
+	
+
 
 	local file = io.open("job","w")
 	while not jobStack:isempty() do
@@ -545,8 +561,15 @@ function main(x,y,z)
 	setPosition()
 	--buildJob(x,y,z)
 	--local succ = directionOfPoint(vector.new(x,y,z))
-	local succ = calcExpectedPosition(vector.new(x,y,z))
-	print(tostring(succ))
+	--local succ = calcExpectedPosition(vector.new(x,y,z))
+	--local succ = getRectangleKoords(vector.new(x,y,z),5)
+
+	--for key, value in pairs(succ) do
+	--	print(tostring(value))	
+	--end
+	
+	
+
 end
 
 if #arg == 3 then
