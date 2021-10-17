@@ -444,27 +444,60 @@ function directionOfPoint(point)
 	if point.x < POSITION.x and point.z > POSITION.z then
 		-- south 0
 		print("south")
-		turn(0)
-		return true
+		return 0
 	elseif point.x > POSITION.x and point.z > POSITION.z then
 		-- east 3
-		turn(3)
 		print("east")
-		return true
+		return 3
 	elseif point.x > POSITION.x and point.z < POSITION.z then
 		-- north 2
-		turn(2)
 		print("north")
-		return true
+		return 2
 	elseif point.x < POSITION.x and point.z < POSITION.z then
 		-- west 1
-		turn(1)
 		print("west")
-		return true
+		return 1
 	else
 		-- looking in wrong direction
 		return false
 	end
+end
+
+function calcExpectedPosition(distanceVector)
+	-- (1,1,1)
+	local direction = FACING
+	local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
+	if distanceVector.y >= 0 then
+		erg.y = erg.y + distanceVector.y
+	else
+		erg.y = erg.y - distanceVector.y
+	end
+
+	if direction == 1 or direction == 3 then
+		local z = distanceVector.x
+		local x = distanceVector.z
+		distanceVector.x = x
+		distanceVector.z = z
+	end
+
+	if direction == 0 then
+		-- if south right -x forward +z
+		erg.x = erg.x - distanceVector.x
+		erg.z = erg.z + distanceVector.z
+	elseif direction == 1 then
+		-- if west right -z forward -x
+		erg.x = erg.x - distanceVector.x
+		erg.z = erg.z - distanceVector.z
+	elseif direction == 2 then
+		-- if north right +x forward -z
+		erg.x = erg.x + distanceVector.x
+		erg.z = erg.z - distanceVector.z
+	elseif direction == 3 then
+		-- if east right +z forward +x
+		erg.x = erg.x + distanceVector.x
+		erg.z = erg.z + distanceVector.z
+	end
+	return erg
 end
 
 
@@ -489,11 +522,6 @@ function buildJob(x,y,z)
 		local firstPos = jobStack:getByIndex(i)
 		distance = distance(firstPos,vector.new())
 	end
-	
-
-
-
-
 
 	local file = io.open("job","w")
 	while not jobStack:isempty() do
@@ -516,8 +544,9 @@ function main(x,y,z)
 	turtle.back()
 	setPosition()
 	--buildJob(x,y,z)
-	local succ = directionOfPoint(vector.new(x,y,z))
-	print(succ)
+	--local succ = directionOfPoint(vector.new(x,y,z))
+	local succ = calcExpectedPosition(vector.new(x,y,z))
+	print(tostring(succ))
 end
 
 if #arg == 3 then
