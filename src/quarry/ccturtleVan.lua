@@ -5,9 +5,13 @@
 -- arbeitsstop bei vollem inventar +
 -- berechnen von relativen blockpositionen +
 -- berechnen von rechteck koordinaten für mienenschächte +
+-- berechnung von Ebene mit rechtecken +
+-- speichern der jobanweisungen +
+-- parsen der jobanweisungen +
 -- automatisches ausrichten der turtle für eine mining operation +
 -- 
 
+-- berechnen eines Weges AB mit zwischenkoordinaten -- PRIO
 -- benutzt vanilla chest idee slave der die erze trägt 
 -- Homeing durch gänge
 -- speichern des systems als graph (angefangen)
@@ -108,7 +112,6 @@ function inArray(needle,haystack)
 	end
 	return false
 end
-
 function strContains(needle,haystack)
 	local first,last = string.find(haystack,needle)
 	if first ~= nil and last ~= nil then
@@ -117,7 +120,6 @@ function strContains(needle,haystack)
 		return false
 	end
 end
-
 function strToArray(stringToConvert)
 	local erg = {}
 	local i = 1
@@ -129,7 +131,6 @@ function strToArray(stringToConvert)
 	end
 	return erg
 end
-
 function strToVector(stringToConvert)
 	local temp = {}
 	local i = 1
@@ -140,7 +141,6 @@ function strToVector(stringToConvert)
 	local ergVector = vector.new(temp[1],temp[2],temp[3])
 	return ergVector
 end
-
 function print_r(array)
 	for i,v in pairs(array) do
 		print("#i"..tostring(v))
@@ -179,7 +179,6 @@ function refuel()
 	end
 	return true
 end
-
 function searchItem(itemstring)
 	turtle.select(1)
 	local erg = -1
@@ -197,7 +196,6 @@ function searchItem(itemstring)
 	end
 	return erg
 end
-
 function invFull()
 	turtle.select(1)
 	local erg = false
@@ -209,13 +207,11 @@ function invFull()
 	print("inventory full")
 	return true
 end
-
 function setHome()
     local x,y,z = gps.locate(1)
 	POSITION = vector.new(x,y,z)
     HOME.position = vector.new(x,y,z)
 end
-
 function setDirection()
 	local x, y, z = gps.locate( 1 )
 	if not x then
@@ -239,7 +235,6 @@ function setDirection()
 	end
     FACING = HOME.facing
 end
-
 function setPosition()
     local x,y,z = gps.locate(1)
     if not x then
@@ -247,7 +242,6 @@ function setPosition()
 	end
     POSITION = vector.new(x,y,z)
 end
-
 function getSidePosition(face)
     setPosition()
     local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
@@ -271,7 +265,9 @@ function getSidePosition(face)
 	end
 	return erg
 end
--- controlling the turtle
+-- end of turtle functions
+
+-- start of control block
 function turn(direction)
 	local turnDirection = direction % 4
 	local n = FACING - turnDirection
@@ -415,8 +411,8 @@ end
 function goHome()
 	move(HOME.position)
 end
-
 -- end of control block
+
 -- start of mining functions
 function fillOreStack(workStack,scanTable)
 	for index,value in pairs(scanTable) do
@@ -429,7 +425,6 @@ function fillOreStack(workStack,scanTable)
 	end
 	return workStack
 end
-
 function mineVein()
 	setPosition()
 	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
@@ -448,8 +443,6 @@ function mineVein()
 	turn(direction)
 	return true
 end
-
-
 -- end of mining functions
 
 -- start Job functions input of target location
@@ -475,7 +468,6 @@ function directionOfPoint(point)
 		return false
 	end
 end
-
 function calcExpectedPosition(startPosition,distanceVector)
 	-- (1,1,1)
 	local direction = FACING
@@ -509,7 +501,6 @@ function calcExpectedPosition(startPosition,distanceVector)
 	end
 	return erg
 end
-
 function getRectangleKoords(startPoint,length)
 	local erg = {startPoint}
 	erg[2] = calcExpectedPosition(startPoint,vector.new(length,0,0))
@@ -529,7 +520,6 @@ function getPlainRectangles(startPoint,depth,width)
 	end
 	return erg
 end
-
 function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
 	setPosition()
 	local file = io.open("job.json","w")
@@ -543,7 +533,6 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
 	end
 	file:close()
 end
-
 function parseJob(startLine,endLine)
 	local file = io.open("job.json","r")
 	local temp = nil
@@ -560,7 +549,6 @@ function parseJob(startLine,endLine)
 			i = i + 1
 		end
 	end
-
 	return erg
 end
 
