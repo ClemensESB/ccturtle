@@ -20,12 +20,6 @@
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
-HOME = {
-	position = nil,
-	facing = nil,
-	path = {}
-}
-
 
 -- // --- will be kept in inventory ---
 ITEMS = {
@@ -103,6 +97,18 @@ function posStack:getByIndex(i)
 	return self.entry[i]
 end
 
+HOME = {
+	position = nil,
+	facing = nil,
+	path = posStack:create()
+}
+JOB = {
+	koords = nil,
+	path = posStack:create()
+}
+
+
+-- // --- END of global Variables ---
 -- nützliche logik
 function inArray(needle,haystack)
 	for key,value in pairs(haystack) do
@@ -143,10 +149,11 @@ function strToVector(stringToConvert)
 end
 function print_r(array)
 	for i,v in pairs(array) do
-		print("#i"..tostring(v))
+		print("%i "..tostring(v))
 	end
 end
 -- math functions
+-- euler distance
 function distance(a,b)
 	local d = math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z))
 	return d
@@ -411,6 +418,8 @@ end
 function goHome()
 	move(HOME.position)
 end
+
+
 -- end of control block
 
 -- start of mining functions
@@ -443,23 +452,26 @@ function mineVein()
 	turn(direction)
 	return true
 end
+
 -- end of mining functions
 
 -- start Job functions input of target location
 function directionOfPoint(point)
-	if point.x < POSITION.x and point.z > POSITION.z then
+	print(tostring(point))
+	print(tostring(POSITION))
+	if point.x <= POSITION.x and point.z >= POSITION.z then
 		-- south 0
 		print("south")
 		return 0
-	elseif point.x > POSITION.x and point.z > POSITION.z then
+	elseif point.x >= POSITION.x and point.z >= POSITION.z then
 		-- east 3
 		print("east")
 		return 3
-	elseif point.x > POSITION.x and point.z < POSITION.z then
+	elseif point.x >= POSITION.x and point.z <= POSITION.z then
 		-- north 2
 		print("north")
 		return 2
-	elseif point.x < POSITION.x and point.z < POSITION.z then
+	elseif point.x <= POSITION.x and point.z <= POSITION.z then
 		-- west 1
 		print("west")
 		return 1
@@ -468,6 +480,8 @@ function directionOfPoint(point)
 		return false
 	end
 end
+-- calculates the relative position to a given point and distance 
+-- depends on the direction the turtle is facing
 function calcExpectedPosition(startPosition,distanceVector)
 	-- (1,1,1)
 	local direction = FACING
@@ -502,54 +516,64 @@ function calcExpectedPosition(startPosition,distanceVector)
 	return erg
 end
 function getRectangleKoords(startPoint,length)
-	local erg = {startPoint}
-	erg[2] = calcExpectedPosition(startPoint,vector.new(length,0,0))
-	erg[3] = calcExpectedPosition(startPoint,vector.new(length,1,0))
-	erg[4] = calcExpectedPosition(startPoint,vector.new(0,1,0))
-	return erg
+	local erg1 = startPoint
+	local erg2 = calcExpectedPosition(startPoint,vector.new(length,0,0))
+	local erg3 = calcExpectedPosition(startPoint,vector.new(length,1,0))
+	local erg4 = calcExpectedPosition(startPoint,vector.new(0,1,0))
+	return erg1,erg2,erg3,erg4
 end
 function getPlainRectangles(startPoint,depth,width)
 	local erg = {}
-	local c = 1
 	for i = 0, depth do
 		if i % 3 == 0 then
 			local rectStart = calcExpectedPosition(startPoint,vector.new(0,0,i))
-			erg[c] = getRectangleKoords(rectStart,width)
-			c = c + 1 
+			local p1,p2,p3,p4 = getRectangleKoords(rectStart,width)
+			table.insert(erg,p1)
+			table.insert(erg,p2)
+			table.insert(erg,p3)
+			table.insert(erg,p4)
 		end
 	end
 	return erg
 end
 function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
 	setPosition()
+	local t = directionOfPoint(startPoint)
+	turn(t)
 	local file = io.open("job.json","w")
 	for i = 0, height do
 		if i % 3 == 0 then
 			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
 			local calculatedPlain = getPlainRectangles(plainStartPoint,depth,width)
+			table.insert(calculatedPlain,vector.new(plainStartPoint.x,plainStartPoint.y+1,plainStartPoint.z))
+			table.insert(calculatedPlain,plainStartPoint)
 			local job = textutils.serializeJSON(calculatedPlain)
 			file:write(job,"\n")
 		end
 	end
 	file:close()
+	return true
 end
 function parseJob(startLine,endLine)
 	local file = io.open("job.json","r")
-	local temp = nil
+	local temp = {}
+	local c = 1
 	for i = startLine, endLine do
 		file:seek("set",i)
-		temp = textutils.unserializeJSON(file:read())
+		temp[c] = textutils.unserializeJSON(file:read())
+		c = c + 1
 	end
 	file:close()
 	local erg = {}
 	local i = 1
-	for k, v in pairs(temp) do
-		for key, vec in pairs(v) do
+	for ebene, vecTable in pairs(temp) do
+		for key, vec in pairs(vecTable) do
 			erg[i] = vector.new(vec.x,vec.y,vec.z)
 			i = i + 1
 		end
 	end
-	return erg
+	JOB.koords = erg
+	return true
 end
 
 -- end job functions
@@ -562,16 +586,13 @@ function main(x,y,z)
     setHome()
 	setDirection()
 	turtle.back()
+	HOME.facing = FACING
 	setPosition()
 	local vec = vector.new(x,y,z)
 	buildJob(vec,5,10,5)
 
-	local plain = parseJob(1,1)
-
-	for key, value in pairs(plain) do
-		print(tostring(value))
-	end
-
+	local succ = parseJob(1,2)
+	goHome()
 end
 
 if #arg == 3 then
