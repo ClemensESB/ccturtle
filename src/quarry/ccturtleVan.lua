@@ -480,11 +480,8 @@ function calcExpectedPosition(startPosition,distanceVector)
 	-- (1,1,1)
 	local direction = FACING
 	local erg = vector.new(startPosition.x,startPosition.y,startPosition.z)
-	if distanceVector.y >= 0 then
-		erg.y = erg.y + distanceVector.y
-	else
-		erg.y = erg.y - distanceVector.y
-	end
+	
+	erg.y = erg.y + distanceVector.y
 
 	if direction == 1 or direction == 3 then
 		local z = distanceVector.x
@@ -520,33 +517,52 @@ function getRectangleKoords(startPoint,length)
 	erg[4] = calcExpectedPosition(startPoint,vector.new(0,1,0))
 	return erg
 end
-
-
-function buildJob(startPoint,endPoint) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
-	setPosition()
-	local jobStack = posStack:create()
-	-- tiefe
-	local height = startPoint.y - endPoint.y -- verticale tiefe der operation
-	--local depth = 
-
-	for i = 0, height do
+function getPlainRectangles(startPoint,depth,width)
+	local erg = {}
+	local c = 1
+	for i = 0, depth do
 		if i % 3 == 0 then
-			for j = 1, 10, 1 do
-				-- hmm
-			end
+			local rectStart = calcExpectedPosition(startPoint,vector.new(0,0,i))
+			erg[c] = getRectangleKoords(rectStart,width)
+			c = c + 1 
 		end
 	end
-	
+	return erg
+end
 
-
-	local file = io.open("job","w")
-	while not jobStack:isempty() do
-		local vec = jobStack:pop():tostring()
-		file:write(vec,"\n")
+function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
+	setPosition()
+	local file = io.open("job.json","w")
+	for i = 0, height do
+		if i % 3 == 0 then
+			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
+			local calculatedPlain = getPlainRectangles(plainStartPoint,depth,width)
+			local job = textutils.serializeJSON(calculatedPlain)
+			file:write(job,"\n")
+		end
 	end
 	file:close()
 end
 
+function parseJob(startLine,endLine)
+	local file = io.open("job.json","r")
+	local temp = nil
+	for i = startLine, endLine do
+		file:seek("set",i)
+		temp = textutils.unserializeJSON(file:read())
+	end
+	file:close()
+	local erg = {}
+	local i = 1
+	for k, v in pairs(temp) do
+		for key, vec in pairs(v) do
+			erg[i] = vector.new(vec.x,vec.y,vec.z)
+			i = i + 1
+		end
+	end
+
+	return erg
+end
 
 -- end job functions
 
@@ -559,16 +575,14 @@ function main(x,y,z)
 	setDirection()
 	turtle.back()
 	setPosition()
-	--buildJob(x,y,z)
-	--local succ = directionOfPoint(vector.new(x,y,z))
-	--local succ = calcExpectedPosition(vector.new(x,y,z))
-	--local succ = getRectangleKoords(vector.new(x,y,z),5)
+	local vec = vector.new(x,y,z)
+	buildJob(vec,5,10,5)
 
-	--for key, value in pairs(succ) do
-	--	print(tostring(value))	
-	--end
-	
-	
+	local plain = parseJob(1,1)
+
+	for key, value in pairs(plain) do
+		print(tostring(value))
+	end
 
 end
 
