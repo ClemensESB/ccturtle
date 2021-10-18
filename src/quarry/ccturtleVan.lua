@@ -416,44 +416,26 @@ end
 --	print(("%d x %s in slot %d"):format(item.count, item.name, slot))
 --end
 function goHome()
-	move(HOME.position)
-end
-
-
--- end of control block
-
--- start of mining functions
-function fillOreStack(workStack,scanTable)
-	for index,value in pairs(scanTable) do
-		if value ~= nil then
-			local orePos = vector.new(value.x,value.y,value.z)
-			if not workStack:inStack(orePos) then
-				workStack:push(orePos)
-			end
-		end
+	print("homeing:")
+	while not HOME.path:isempty() do
+		local temp = HOME.path:pop()
+		print(tostring(temp))
+		move(temp)
+		JOB.path:push(temp)
 	end
-	return workStack
 end
-function mineVein()
-	setPosition()
-	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
-	local direction = FACING
-	local orePosStack = posStack:create()
-	local succ,scanTable = scan(false)
-	orePosStack = fillOreStack(orePosStack,scanTable)
-	repeat
-		if not orePosStack:isempty() then
-			move(orePosStack:pop())
-		end
-		local succ,scanTable = scan(false)
-		orePosStack = fillOreStack(orePosStack,scanTable)
-	until orePosStack:isempty()
-	move(start)
-	turn(direction)
-	return true
+function returnToJob()
+	while not JOB.path:isempty() do
+		local temp = JOB.path:pop()
+		move(temp)
+		HOME.path:push(temp)
+	end
 end
-
--- end of mining functions
+function putInChest()
+	goHome()
+	returnToJob()
+end
+-- end of control block
 
 -- start Job functions input of target location
 function directionOfPoint(point)
@@ -546,7 +528,7 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
 			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
 			local calculatedPlain = getPlainRectangles(plainStartPoint,depth,width)
 			table.insert(calculatedPlain,vector.new(plainStartPoint.x,plainStartPoint.y+1,plainStartPoint.z))
-			table.insert(calculatedPlain,plainStartPoint)
+			--table.insert(calculatedPlain,plainStartPoint)
 			local job = textutils.serializeJSON(calculatedPlain)
 			file:write(job,"\n")
 		end
@@ -575,9 +557,91 @@ function parseJob(startLine,endLine)
 	JOB.koords = erg
 	return true
 end
-
 -- end job functions
 
+-- start of mining functions
+function fillOreStack(workStack,scanTable)
+	for index,value in pairs(scanTable) do
+		if value ~= nil then
+			local orePos = vector.new(value.x,value.y,value.z)
+			if not workStack:inStack(orePos) then
+				workStack:push(orePos)
+			end
+		end
+	end
+	return workStack
+end
+function mineVein(vertical)
+	setPosition()
+	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
+	local direction = FACING
+	local orePosStack = posStack:create()
+	repeat
+		if not orePosStack:isempty() then
+			move(orePosStack:pop())
+		end
+		local succ,scanTable = scan(vertical)
+		orePosStack = fillOreStack(orePosStack,scanTable)
+		if invFull() then
+			HOME.path:push(start)
+			HOME.path:push(POSITION)
+			putInChest()
+			HOME.path:pop()
+			HOME.path:pop()
+		end
+	until orePosStack:isempty()
+	move(start)
+	turn(direction)
+	return true
+end
+function mineToTarget(target)
+	setPosition()
+	while POSITION.y ~= target.y do
+		if POSITION.y > target.y then
+			mineVein(true)
+			move(vector.new(POSITION.x,POSITION.y - 1,POSITION.z))
+		else
+			mineVein(true)
+			move(vector.new(POSITION.x,POSITION.y + 1,POSITION.z))
+		end
+	end
+
+	while POSITION.x ~= target.x do
+		if POSITION.x > target.x then
+			mineVein(false)
+			move(vector.new(POSITION.x - 1,POSITION.y,POSITION.z))
+		else
+			mineVein(false)
+			move(vector.new(POSITION.x + 1,POSITION.y,POSITION.z))
+		end
+	end
+
+	while POSITION.z ~= target.z do
+		if POSITION.z > target.z then
+			mineVein(false)
+			move(vector.new(POSITION.x,POSITION.y,POSITION.z - 1))
+		else
+			mineVein(false)
+			move(vector.new(POSITION.x,POSITION.y,POSITION.z + 1))
+		end
+	end
+end
+function mineJob()
+	local arrLength = #(JOB.koords)
+	HOME.path:push(HOME.position)
+	HOME.path:push(vector.new(JOB.koords[1].x,HOME.position.y,JOB.koords[1].z))
+	HOME.path:push(JOB.koords[1])
+
+	for i = 0, arrLength-1 do
+		mineToTarget(JOB.koords[i+1])
+		if i % 4 == 0 then
+			HOME.path:pop()
+			HOME.path:push(JOB.koords[i+1])
+		end
+	end
+end
+
+-- end of mining functions
 
 function main(x,y,z)
 	if x == nil and y == nil and z == nil then
@@ -592,7 +656,13 @@ function main(x,y,z)
 	buildJob(vec,5,10,5)
 
 	local succ = parseJob(1,2)
+	if succ then
+		mineJob()
+	end
+	print("returning to Home")
 	goHome()
+	turn(HOME.facing)
+	print("finished!")
 end
 
 if #arg == 3 then
