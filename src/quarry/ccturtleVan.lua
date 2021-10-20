@@ -605,6 +605,7 @@ end
 -- end of mining functions
 
 function main(startE,endE)
+	refuel()
 	setHome()
 	setDirection()
 	turtle.back()

@@ -44,10 +44,13 @@ function countItems()
     for key, chestName in pairs(CHESTS) do
         local chest = peripheral.wrap(chestName)
         for slot, item in pairs(chest.list()) do
-            if items[item.name] == nil then
-                items[item.name] = 0
+            local iDetail = chest.getItemDetail(slot)
+            local name = iDetail.displayName
+            --print_r(item)
+            if items[name] == nil then
+                items[name] = 0
             end
-            items[item.name] = items[item.name] + item.count
+            items[name] = items[name] + item.count
             --print(("%d x %s in slot %d"):format(item.count, item.name, slot))
         end
     end
@@ -69,7 +72,10 @@ function main()
     CHESTS = chests
     local items = countItems()
 
-    print_r(items) 
+    print_r(items)
+
+    
+    
 end
 
 main()
