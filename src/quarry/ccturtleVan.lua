@@ -29,7 +29,8 @@ ITEMS = {
 		["vanillaChest16"] = "minecraft:shulker_box",
 		["vanillaChest12"] = "minecraft:purple_shulker_box",
 		["immersiveChest12"] = "immersiveengineering:wooden_device0",
-		["immersiveChest16"] = "immersiveengineering:crate"
+		["immersiveChest16"] = "immersiveengineering:crate",
+		["chest"] = "minecraft:chest"
 	},
 	["pickaxe"] = "minecraft:diamond_pickaxe",
 	["modemNormal"] = "computercraft:wireless_modem_normal",
@@ -212,6 +213,14 @@ function invFull()
 		end
 	end
 	print("inventory full")
+	return true
+end
+function invEmpty()
+	for i=1,16 do
+		if turtle.getItemCount(i) ~= 0 then
+			return false
+		end
+	end
 	return true
 end
 function setHome()
@@ -423,39 +432,69 @@ function goHome()
 		move(temp)
 		JOB.path:push(temp)
 	end
+	turn(HOME.facing)
 end
 function returnToJob()
+	print("jobbing:")
 	while not JOB.path:isempty() do
 		local temp = JOB.path:pop()
+		print(tostring(temp))
 		move(temp)
 		HOME.path:push(temp)
 	end
 end
+function adjectedInventoryFull()
+
+end
+function locateChests()
+	local temp = FACING
+	local sideArray = {(temp-1) % 4,(temp+1) % 4}
+	turtle.select(1)
+	local canUp = false
+	while not invEmpty() do
+		for index,value in pairs(sideArray) do
+			local success,tempTable = scanSide(value)
+			if success and inArray(tempTable.name,ITEMS["chests"])  then
+				for slot = 1, 16 do
+					turtle.select(slot)
+					turtle.drop()
+				end
+				canUp = true
+			else
+				canUp = false
+			end
+		end
+		if canUp then
+			move(vector.new(POSITION.x,POSITION.y+1,POSITION.z))
+		end
+	end
+end
 function putInChest()
 	goHome()
+	locateChests()
 	returnToJob()
 end
 -- end of control block
 
 -- start Job functions input of target location
 function directionOfPoint(point)
-	print(tostring(point))
-	print(tostring(POSITION))
+	--print(tostring(point))
+	--print(tostring(POSITION))
 	if point.x <= POSITION.x and point.z >= POSITION.z then
 		-- south 0
-		print("south")
+		--print("south")
 		return 0
 	elseif point.x >= POSITION.x and point.z >= POSITION.z then
 		-- east 3
-		print("east")
+		--print("east")
 		return 3
 	elseif point.x >= POSITION.x and point.z <= POSITION.z then
 		-- north 2
-		print("north")
+		--print("north")
 		return 2
 	elseif point.x <= POSITION.x and point.z <= POSITION.z then
 		-- west 1
-		print("west")
+		--print("west")
 		return 1
 	else
 		-- looking in wrong direction
@@ -523,6 +562,7 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
 	local t = directionOfPoint(startPoint)
 	turn(t)
 	local file = io.open("job.json","w")
+	local c = 0
 	for i = 0, height do
 		if i % 3 == 0 then
 			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
@@ -531,10 +571,11 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
 			--table.insert(calculatedPlain,plainStartPoint)
 			local job = textutils.serializeJSON(calculatedPlain)
 			file:write(job,"\n")
+			c = c + 1
 		end
 	end
 	file:close()
-	return true
+	return c
 end
 function parseJob(startLine,endLine)
 	local file = io.open("job.json","r")
@@ -549,9 +590,10 @@ function parseJob(startLine,endLine)
 	local erg = {}
 	local i = 1
 	for ebene, vecTable in pairs(temp) do
-		for key, vec in pairs(vecTable) do
-			erg[i] = vector.new(vec.x,vec.y,vec.z)
-			i = i + 1
+		local tableLength = #(vecTable)
+		erg[ebene] = {}
+		for i = 1, tableLength do
+			erg[ebene][i] = vector.new(vecTable[i].x,vecTable[i].y,vecTable[i].z)
 		end
 	end
 	JOB.koords = erg
@@ -626,24 +668,28 @@ function mineToTarget(target)
 		end
 	end
 end
-function mineJob()
-	local arrLength = #(JOB.koords)
-	HOME.path:push(HOME.position)
-	HOME.path:push(vector.new(JOB.koords[1].x,HOME.position.y,JOB.koords[1].z))
-	HOME.path:push(JOB.koords[1])
-
-	for i = 0, arrLength-1 do
-		mineToTarget(JOB.koords[i+1])
-		if i % 4 == 0 then
-			HOME.path:pop()
-			HOME.path:push(JOB.koords[i+1])
+function mineJob()	
+	HOME.path:push(HOME.position) -- home position
+	HOME.path:push(vector.new(JOB.koords[1][1].x,HOME.position.y,JOB.koords[1][1].z)) -- start operation position
+	
+	for key, ebene in pairs(JOB.koords) do
+		local arrLength = #(ebene)
+		HOME.path:push(ebene[1]) -- start ebene position
+		HOME.path:push(ebene[1]) -- start ebene position
+		for i = 0, arrLength-1 do
+			mineToTarget(ebene[i+1])
+			if i % 4 == 0 then
+				HOME.path:pop()
+				print("gang: "..tostring(ebene[i+1]))
+				HOME.path:push(ebene[i+1]) -- start gang position
+			end
 		end
 	end
 end
 
 -- end of mining functions
 
-function main(x,y,z)
+function main(x,y,z,height,depth,width)
 	if x == nil and y == nil and z == nil then
 		error("please use ccturtleVan x y z",1)
 	end
@@ -653,9 +699,9 @@ function main(x,y,z)
 	HOME.facing = FACING
 	setPosition()
 	local vec = vector.new(x,y,z)
-	buildJob(vec,5,10,5)
+	local ebenen = buildJob(vec,height,depth,width)
 
-	local succ = parseJob(1,2)
+	local succ = parseJob(1,ebenen)
 	if succ then
 		mineJob()
 	end
@@ -665,8 +711,8 @@ function main(x,y,z)
 	print("finished!")
 end
 
-if #arg == 3 then
-	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]))
+if #arg == 6 then
+	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]),tonumber(arg[4]),tonumber(arg[5]),tonumber(arg[6]))
 else
 	main(nil,nil,nil)
 end
