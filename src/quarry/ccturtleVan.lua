@@ -425,20 +425,20 @@ end
 --	print(("%d x %s in slot %d"):format(item.count, item.name, slot))
 --end
 function goHome()
-	print("homeing:")
+	--print("homeing:")
 	while not HOME.path:isempty() do
 		local temp = HOME.path:pop()
-		print(tostring(temp))
+		--print(tostring(temp))
 		move(temp)
 		JOB.path:push(temp)
 	end
 	turn(HOME.facing)
 end
 function returnToJob()
-	print("jobbing:")
+	--print("jobbing:")
 	while not JOB.path:isempty() do
 		local temp = JOB.path:pop()
-		print(tostring(temp))
+		--print(tostring(temp))
 		move(temp)
 		HOME.path:push(temp)
 	end
@@ -680,7 +680,7 @@ function mineJob()
 			mineToTarget(ebene[i+1])
 			if i % 4 == 0 then
 				HOME.path:pop()
-				print("gang: "..tostring(ebene[i+1]))
+				--print("gang: "..tostring(ebene[i+1]))
 				HOME.path:push(ebene[i+1]) -- start gang position
 			end
 		end
