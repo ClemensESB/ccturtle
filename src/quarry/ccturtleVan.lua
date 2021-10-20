@@ -150,7 +150,7 @@ function strToVector(stringToConvert)
 end
 function print_r(array)
 	for i,v in pairs(array) do
-		print("%i "..tostring(v))
+		print(string.format("%s: %s",i,v))
 	end
 end
 -- math functions
@@ -425,20 +425,16 @@ end
 --	print(("%d x %s in slot %d"):format(item.count, item.name, slot))
 --end
 function goHome()
-	--print("homeing:")
 	while not HOME.path:isempty() do
 		local temp = HOME.path:pop()
-		--print(tostring(temp))
 		move(temp)
 		JOB.path:push(temp)
 	end
 	turn(HOME.facing)
 end
 function returnToJob()
-	--print("jobbing:")
 	while not JOB.path:isempty() do
 		local temp = JOB.path:pop()
-		--print(tostring(temp))
 		move(temp)
 		HOME.path:push(temp)
 	end
@@ -477,110 +473,34 @@ end
 -- end of control block
 
 -- start Job functions input of target location
-function directionOfPoint(point)
-	--print(tostring(point))
-	--print(tostring(POSITION))
-	if point.x <= POSITION.x and point.z >= POSITION.z then
-		-- south 0
-		--print("south")
-		return 0
-	elseif point.x >= POSITION.x and point.z >= POSITION.z then
-		-- east 3
-		--print("east")
-		return 3
-	elseif point.x >= POSITION.x and point.z <= POSITION.z then
-		-- north 2
-		--print("north")
-		return 2
-	elseif point.x <= POSITION.x and point.z <= POSITION.z then
-		-- west 1
-		--print("west")
-		return 1
-	else
-		-- looking in wrong direction
-		return false
-	end
+function fileLines (fileName)
+  local count = 0
+  for line in io.lines(fileName) do
+    count = count + 1
+  end
+  return count
 end
--- calculates the relative position to a given point and distance 
--- depends on the direction the turtle is facing
-function calcExpectedPosition(startPosition,distanceVector)
-	-- (1,1,1)
-	local direction = FACING
-	local erg = vector.new(startPosition.x,startPosition.y,startPosition.z)
-	
-	erg.y = erg.y + distanceVector.y
-
-	if direction == 1 or direction == 3 then
-		local z = distanceVector.x
-		local x = distanceVector.z
-		distanceVector.x = x
-		distanceVector.z = z
-	end
-
-	if direction == 0 then
-		-- if south right -x forward +z
-		erg.x = erg.x - distanceVector.x
-		erg.z = erg.z + distanceVector.z
-	elseif direction == 1 then
-		-- if west right -z forward -x
-		erg.x = erg.x - distanceVector.x
-		erg.z = erg.z - distanceVector.z
-	elseif direction == 2 then
-		-- if north right +x forward -z
-		erg.x = erg.x + distanceVector.x
-		erg.z = erg.z - distanceVector.z
-	elseif direction == 3 then
-		-- if east right +z forward +x
-		erg.x = erg.x + distanceVector.x
-		erg.z = erg.z + distanceVector.z
-	end
-	return erg
-end
-function getRectangleKoords(startPoint,length)
-	local erg1 = startPoint
-	local erg2 = calcExpectedPosition(startPoint,vector.new(length,0,0))
-	local erg3 = calcExpectedPosition(startPoint,vector.new(length,1,0))
-	local erg4 = calcExpectedPosition(startPoint,vector.new(0,1,0))
-	return erg1,erg2,erg3,erg4
-end
-function getPlainRectangles(startPoint,depth,width)
-	local erg = {}
-	for i = 0, depth do
-		if i % 3 == 0 then
-			local rectStart = calcExpectedPosition(startPoint,vector.new(0,0,i))
-			local p1,p2,p3,p4 = getRectangleKoords(rectStart,width)
-			table.insert(erg,p1)
-			table.insert(erg,p2)
-			table.insert(erg,p3)
-			table.insert(erg,p4)
-		end
-	end
-	return erg
-end
-function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
-	setPosition()
-	local t = directionOfPoint(startPoint)
-	turn(t)
-	local file = io.open("job.json","w")
-	local c = 0
-	for i = 0, height do
-		if i % 3 == 0 then
-			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
-			local calculatedPlain = getPlainRectangles(plainStartPoint,depth,width)
-			table.insert(calculatedPlain,vector.new(plainStartPoint.x,plainStartPoint.y+1,plainStartPoint.z))
-			--table.insert(calculatedPlain,plainStartPoint)
-			local job = textutils.serializeJSON(calculatedPlain)
-			file:write(job,"\n")
-			c = c + 1
-		end
-	end
-	file:close()
-	return c
+function fileLine (lineNum, fileName)
+  local count = 0
+  for line in io.lines(fileName) do
+    count = count + 1
+    if count == lineNum then return line end
+  end
+  error(fileName .. " has fewer than " .. lineNum .. " lines.")
 end
 function parseJob(startLine,endLine)
 	local file = io.open("job.json","r")
 	local temp = {}
 	local c = 1
+	local lines = fileLines("job.json")
+	local information = textutils.unserializeJSON(fileLine(lines,"job.json"))
+
+	print_r(information)
+
+	if endLine < 0 or endLine > information.lines then
+		endLine = information.lines
+	end
+
 	for i = startLine, endLine do
 		file:seek("set",i)
 		temp[c] = textutils.unserializeJSON(file:read())
@@ -680,28 +600,21 @@ function mineJob()
 			mineToTarget(ebene[i+1])
 			if i % 4 == 0 then
 				HOME.path:pop()
-				--print("gang: "..tostring(ebene[i+1]))
 				HOME.path:push(ebene[i+1]) -- start gang position
 			end
 		end
 	end
 end
-
 -- end of mining functions
 
-function main(x,y,z,height,depth,width)
-	if x == nil and y == nil and z == nil then
-		error("please use ccturtleVan x y z",1)
-	end
-    setHome()
+function main(startE,endE)
+	setHome()
 	setDirection()
 	turtle.back()
 	HOME.facing = FACING
 	setPosition()
-	local vec = vector.new(x,y,z)
-	local ebenen = buildJob(vec,height,depth,width)
-
-	local succ = parseJob(1,ebenen)
+	--local ebenen = 1
+	local succ = parseJob(startE,endE)
 	if succ then
 		mineJob()
 	end
@@ -710,9 +623,8 @@ function main(x,y,z,height,depth,width)
 	turn(HOME.facing)
 	print("finished!")
 end
-
-if #arg == 6 then
-	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]),tonumber(arg[4]),tonumber(arg[5]),tonumber(arg[6]))
+if #arg == 1 then
+	main(arg[1],arg[2])
 else
-	main(nil,nil,nil)
+	main(1,-1)
 end
