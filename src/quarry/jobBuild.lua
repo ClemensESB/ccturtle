@@ -59,7 +59,7 @@ JOB = {
 
 function print_r(array)
 	for i,v in pairs(array) do
-		print(string.format("%s: %i",i,v))
+		print(string.format("%s: %s",i,v))
 	end
 end
 function strToVector(stringToConvert)
@@ -256,6 +256,25 @@ end
 
 if #arg == 6 then
 	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]),tonumber(arg[4]),tonumber(arg[5]),tonumber(arg[6]))
+elseif #arg == 1 and tostring(arg[1]) == "remote" then
+	print("started script with argument remote\nwaiting for a message on channel 187...")
+	local devices = peripheral.getNames()
+	local modem = nil
+	for key, side in pairs(devices) do
+		if peripheral.getType(side) == "modem" then
+			modem = peripheral.wrap(side)
+		end
+	end
+
+	if modem == nil then
+		error("argument remote used but turtle has no equipped modem",1)
+	end
+	if not modem.isOpen(187) then
+		modem.open(187)
+	end
+	local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+	print_r({event, side, channel, replyChannel, message, distance})
+	main(message.koords.x,message.koords.y,message.koords.z,message.dimensions.x,message.dimensions.y,message.dimensions.z)
 else
 	shell.execute("clear")
 	print("please enter the target location x,y,z")

@@ -9,13 +9,17 @@
 -- speichern der jobanweisungen +
 -- parsen der jobanweisungen +
 -- automatisches ausrichten der turtle für eine mining operation +
--- 
+-- berechnen eines Weges AB mit zwischenkoordinaten  +
+-- benutzt vanilla chest +
+-- Homeing durch gänge +
+-- speichern des systems als graph (angefangen) +
 
--- berechnen eines Weges AB mit zwischenkoordinaten -- PRIO
--- benutzt vanilla chest idee slave der die erze trägt 
--- Homeing durch gänge
--- speichern des systems als graph (angefangen)
 
+-- aufteilung eines jobs auf mehrere turtles
+-- jobübermittlung via wireless modem
+-- erze gesammelt tracking
+
+-- idee sklave der die erze trägt
 
 VERSION = "1.16"
 POSITION = nil
@@ -111,7 +115,7 @@ JOB = {
 
 -- // --- END of global Variables ---
 -- nützliche logik
-function inArray(needle,haystack)
+local function inArray(needle,haystack)
 	for key,value in pairs(haystack) do
 		if needle == value then
 			return true
@@ -119,7 +123,7 @@ function inArray(needle,haystack)
 	end
 	return false
 end
-function strContains(needle,haystack)
+local function strContains(needle,haystack)
 	local first,last = string.find(haystack,needle)
 	if first ~= nil and last ~= nil then
 		return true
@@ -127,7 +131,7 @@ function strContains(needle,haystack)
 		return false
 	end
 end
-function strToArray(stringToConvert)
+local function strToArray(stringToConvert)
 	local erg = {}
 	local i = 1
 	if stringToConvert ~= nil then
@@ -138,7 +142,7 @@ function strToArray(stringToConvert)
 	end
 	return erg
 end
-function strToVector(stringToConvert)
+local function strToVector(stringToConvert)
 	local temp = {}
 	local i = 1
 	for param in stringToConvert:gmatch('[^,%s]+') do
@@ -148,19 +152,36 @@ function strToVector(stringToConvert)
 	local ergVector = vector.new(temp[1],temp[2],temp[3])
 	return ergVector
 end
-function print_r(array)
+local function print_r(array)
 	for i,v in pairs(array) do
 		print(string.format("%s: %s",i,v))
 	end
 end
--- math functions
+-- math local functions
 -- euler distance
-function distance(a,b)
+local function distance(a,b)
 	local d = math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z))
 	return d
 end
 -- turtle functions
-function refuel()
+local function searchItem(itemstring)
+	turtle.select(1)
+	local erg = -1
+	for i = 1,16 do
+		if turtle.getItemCount(i) > 0 then
+			local item = turtle.getItemDetail(i)
+			if item.name == itemstring then
+				return i
+			else
+				erg = -1
+			end
+		else
+			erg = -1
+		end
+	end
+	return erg
+end
+local function refuel()
 	local fuelLevel = turtle.getFuelLevel()
 	local fuel = -1
 	for key,value in pairs(FUEL) do
@@ -187,24 +208,7 @@ function refuel()
 	end
 	return true
 end
-function searchItem(itemstring)
-	turtle.select(1)
-	local erg = -1
-	for i = 1,16 do
-		if turtle.getItemCount(i) > 0 then
-			local item = turtle.getItemDetail(i)
-			if item.name == itemstring then
-				return i
-			else
-				erg = -1
-			end
-		else
-			erg = -1
-		end
-	end
-	return erg
-end
-function invFull()
+local function invFull()
 	turtle.select(1)
 	local erg = false
 	for i=1,16 do
@@ -215,7 +219,7 @@ function invFull()
 	print("inventory full")
 	return true
 end
-function invEmpty()
+local function invEmpty()
 	for i=1,16 do
 		if turtle.getItemCount(i) ~= 0 then
 			return false
@@ -223,12 +227,12 @@ function invEmpty()
 	end
 	return true
 end
-function setHome()
+local function setHome()
     local x,y,z = gps.locate(1)
 	POSITION = vector.new(x,y,z)
     HOME.position = vector.new(x,y,z)
 end
-function setDirection()
+local function setDirection()
 	local x, y, z = gps.locate( 1 )
 	if not x then
 		error( "No GPS available", 0 )
@@ -251,14 +255,14 @@ function setDirection()
 	end
     FACING = HOME.facing
 end
-function setPosition()
+local function setPosition()
     local x,y,z = gps.locate(1)
     if not x then
 		error( "No GPS available", 0 )
 	end
     POSITION = vector.new(x,y,z)
 end
-function getSidePosition(face)
+local function getSidePosition(face)
     setPosition()
     local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
 	local vectorX = vector.new(1,0,0)
@@ -284,7 +288,7 @@ end
 -- end of turtle functions
 
 -- start of control block
-function turn(direction)
+local function turn(direction)
 	local turnDirection = direction % 4
 	local n = FACING - turnDirection
 	if n < 0 then
@@ -311,7 +315,7 @@ function turn(direction)
 	FACING = turnDirection
 	return true
 end
-function scanSide(side)
+local function scanSide(side)
 	local success,erg
 	if side <= 3 then
 		turn(side)
@@ -325,7 +329,7 @@ function scanSide(side)
 	end
 	return success,erg
 end
-function move(targetVector)
+local function move(targetVector)
 	if targetVector == nil then return end
     setPosition()
     -- oben unten als erstes brute forced
@@ -396,7 +400,7 @@ function move(targetVector)
 	end
 	return true
 end
-function scan(lookBack)
+local function scan(lookBack)
 	local temp = FACING
 	local tempTable = nil
 	local ergTable = {}
@@ -421,7 +425,7 @@ function scan(lookBack)
 	return a,ergTable
 end
 
-function goHome()
+local function goHome()
 	while not HOME.path:isempty() do
 		local temp = HOME.path:pop()
 		move(temp)
@@ -429,17 +433,17 @@ function goHome()
 	end
 	turn(HOME.facing)
 end
-function returnToJob()
+local function returnToJob()
 	while not JOB.path:isempty() do
 		local temp = JOB.path:pop()
 		move(temp)
 		HOME.path:push(temp)
 	end
 end
-function adjectedInventoryFull()
+local function adjectedInventoryFull()
 
 end
-function locateChests()
+local function locateChests()
 	local temp = FACING
 	local sideArray = {(temp-1) % 4,(temp+1) % 4}
 	turtle.select(1)
@@ -462,7 +466,7 @@ function locateChests()
 		end
 	end
 end
-function putInChest()
+local function putInChest()
 	goHome()
 	locateChests()
 	returnToJob()
@@ -470,14 +474,14 @@ end
 -- end of control block
 
 -- start Job functions input of target location
-function fileLines (fileName)
+local function fileLines (fileName)
   local count = 0
   for line in io.lines(fileName) do
     count = count + 1
   end
   return count
 end
-function fileLine (lineNum, fileName)
+local function fileLine (lineNum, fileName)
   local count = 0
   for line in io.lines(fileName) do
     count = count + 1
@@ -485,7 +489,7 @@ function fileLine (lineNum, fileName)
   end
   error(fileName .. " has fewer than " .. lineNum .. " lines.")
 end
-function parseJob(startLine,endLine)
+local function parseJob(startLine,endLine)
 	local file = io.open("job.json","r")
 	local temp = {}
 	local c = 1
@@ -519,7 +523,7 @@ end
 -- end job functions
 
 -- start of mining functions
-function fillOreStack(workStack,scanTable)
+local function fillOreStack(workStack,scanTable)
 	for index,value in pairs(scanTable) do
 		if value ~= nil then
 			local orePos = vector.new(value.x,value.y,value.z)
@@ -530,7 +534,7 @@ function fillOreStack(workStack,scanTable)
 	end
 	return workStack
 end
-function mineVein(vertical)
+local function mineVein(vertical)
 	setPosition()
 	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
 	local direction = FACING
@@ -553,7 +557,7 @@ function mineVein(vertical)
 	turn(direction)
 	return true
 end
-function mineToTarget(target)
+local function mineToTarget(target)
 	setPosition()
 	while POSITION.y ~= target.y do
 		if POSITION.y > target.y then
@@ -585,7 +589,7 @@ function mineToTarget(target)
 		end
 	end
 end
-function mineJob()	
+local function mineJob()	
 	HOME.path:push(HOME.position) -- home position
 	HOME.path:push(vector.new(JOB.koords[1][1].x,HOME.position.y,JOB.koords[1][1].z)) -- start operation position
 	
@@ -604,14 +608,13 @@ function mineJob()
 end
 -- end of mining functions
 
-function main(startE,endE)
+local function main(startE,endE)
 	refuel()
 	setHome()
 	setDirection()
 	turtle.back()
 	HOME.facing = FACING
 	setPosition()
-	--local ebenen = 1
 	local succ = parseJob(startE,endE)
 	if succ then
 		mineJob()
@@ -621,7 +624,7 @@ function main(startE,endE)
 	turn(HOME.facing)
 	print("finished!")
 end
-if #arg == 1 then
+if #arg == 2 then
 	main(arg[1],arg[2])
 else
 	main(1,-1)
