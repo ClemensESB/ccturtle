@@ -623,7 +623,7 @@ local function main(startE,endE)
 	goHome()
 	turn(HOME.facing)
 	print("finished!")
-	shell.execute("tMessage.lua","listen")
+	return true
 end
 if #arg == 2 then
 	main(arg[1],arg[2])

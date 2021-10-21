@@ -251,7 +251,7 @@ function main(x,y,z,height,depth,width)
 	local vec = vector.new(x,y,z)
 	local ebenen = buildJob(vec,height,depth,width)
 	print("Job created successfully plains: "..ebenen)
-    shell.execute("tMessage.lua","listen")
+    return true
 end
 
 if #arg == 6 then

@@ -88,10 +88,12 @@ if #arg >= 1 and arg[1] == "send" then
             local program = "buildJob.lua "..math.floor(x).." "..(math.floor(y)-1).." "..math.floor(z).." "..arg[4].." "..arg[5].." "..arg[6]
             local msg = message:create("run",program,{})
             send(msg,SEND)
+            getAnswer()
         elseif arg[3] == "start" then
             local program = "ccturtleVan.lua"
             local msg = message:create("run",program,{})
             send(msg,SEND)
+            getAnswer()
         end
     end
 elseif #arg >= 1 and arg[1] == "listen" then
@@ -103,10 +105,13 @@ elseif #arg >= 1 and arg[1] == "listen" then
     local event, side, channel, replyChannel, answer, distance = os.pullEvent("modem_message")
     if answer.header.type == "text" then
         print(answer.data)
+        shell.run("tMessage listen")
     elseif answer.header.type == "run" then
         shell.run(answer.data)
+        MODEM.closeAll()
         local msg = message:create("text","program sucessfully run",{})
         send(msg,replyChannel)
+        shell.run("tMessage listen")
     elseif answer.header.type == "file" then
         local file = io.open(answer.header.info.filename,"w")
         for line, content in pairs(answer.data) do
@@ -115,6 +120,8 @@ elseif #arg >= 1 and arg[1] == "listen" then
         file:close()
         local msg = message:create("text","file transfered",{})
         send(msg,replyChannel)
+        MODEM.closeAll()
+        shell.run("tMessage listen")
     elseif answer.type == "stop" then
 
     end
