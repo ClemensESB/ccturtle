@@ -24,7 +24,7 @@
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
-
+OPERATIONSTART = nil
 -- // --- will be kept in inventory ---
 ITEMS = {
 	["chests"] = {
@@ -481,7 +481,7 @@ local function fileLines (fileName)
   end
   return count
 end
-local function fileLine (lineNum, fileName)
+local function fileLine (fileName,lineNum)
   local count = 0
   for line in io.lines(fileName) do
     count = count + 1
@@ -490,11 +490,10 @@ local function fileLine (lineNum, fileName)
   error(fileName .. " has fewer than " .. lineNum .. " lines.")
 end
 local function parseJob(startLine,endLine)
-	local file = io.open("job.json","r")
 	local temp = {}
 	local c = 1
 	local lines = fileLines("job.json")
-	local information = textutils.unserializeJSON(fileLine(lines,"job.json"))
+	local information = textutils.unserializeJSON(fileLine("job.json",lines))
 
 	print_r(information)
 
@@ -503,13 +502,12 @@ local function parseJob(startLine,endLine)
 	end
 
 	for i = startLine, endLine do
-		file:seek("set",i)
-		temp[c] = textutils.unserializeJSON(file:read())
+		temp[c] = textutils.unserializeJSON(fileLine("job.json",i))
 		c = c + 1
 	end
-	file:close()
 	local erg = {}
 	local i = 1
+	OPERATIONSTART = vector.new(information.start.x,information.start.y,information.start.z)
 	for ebene, vecTable in pairs(temp) do
 		local tableLength = #(vecTable)
 		erg[ebene] = {}
@@ -558,6 +556,7 @@ local function mineVein(vertical)
 	return true
 end
 local function mineToTarget(target)
+	-- print(tostring(target))
 	setPosition()
 	while POSITION.y ~= target.y do
 		if POSITION.y > target.y then
@@ -591,8 +590,8 @@ local function mineToTarget(target)
 end
 local function mineJob()	
 	HOME.path:push(HOME.position) -- home position
-	HOME.path:push(vector.new(JOB.koords[1][1].x,HOME.position.y,JOB.koords[1][1].z)) -- start operation position
-	
+	HOME.path:push(OPERATIONSTART) -- start operation position
+	mineToTarget(OPERATIONSTART)
 	for key, ebene in pairs(JOB.koords) do
 		local arrLength = #(ebene)
 		HOME.path:push(ebene[1]) -- start ebene position
@@ -625,8 +624,9 @@ local function main(startE,endE)
 	print("finished!")
 	return true
 end
+
 if #arg == 2 then
-	main(arg[1],arg[2])
+	main(tonumber(arg[1]),tonumber(arg[2]))
 else
 	main(1,-1)
 end
