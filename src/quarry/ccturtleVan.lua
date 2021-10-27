@@ -588,7 +588,7 @@ local function mineToTarget(target)
 		end
 	end
 end
-local function mineJob()	
+local function mineJob()
 	HOME.path:push(HOME.position) -- home position
 	HOME.path:push(OPERATIONSTART) -- start operation position
 	mineToTarget(OPERATIONSTART)

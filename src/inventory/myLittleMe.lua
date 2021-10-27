@@ -24,7 +24,7 @@ local function inArray(needle,haystack)
 	return false
 end
 local function strContains(needle,haystack)
-	local first,last = string.find(haystack,needle)
+	local first,last = string.find(haystack:upper(),needle:upper())
 	if first ~= nil and last ~= nil then
 		return true
 	else
@@ -68,7 +68,7 @@ local function addToItemListByKey(itemId,itemDetail)
     table.insert(ITEMLIST[KEYLIST[itemId]].details,itemDetail)
 end
 
-local function printItems(itemIndex)
+local function printItems(itemIndex,itemList)
     term.clear()
     if itemIndex < 0 then
         itemIndex = 0
@@ -76,13 +76,12 @@ local function printItems(itemIndex)
     for i = 1,19 do
         term.setCursorPos(1,i)
         local pos = i + itemIndex
-        if pos > #(ITEMLIST) then
+        if pos > #(itemList) then
             break
         end
-        local temp = ITEMLIST[pos]
+        local temp = itemList[pos]
         term.write(string.format("%s: %s",temp.name,temp.count))
     end
-    
 end
 
 local function mapItems()
@@ -111,12 +110,34 @@ local function browse()
             term.scroll(dir)
             itemIndex = itemIndex + dir
         end
-        printItems(itemIndex)
+        printItems(itemIndex,ITEMLIST)
     end
 end
 
 local function searchWindow()
-
+    term.clear()
+    term.setCursorPos(1,1)
+    print("searching...")
+    term.setCursorPos(1,2)
+    local input = io.read()
+    local temp = {}
+    local found = false
+    for key, value in pairs(ITEMLIST) do
+        if strContains(input,value.name) then
+            table.insert(temp,value)
+            found = true
+        end
+    end
+    term.clear()
+    term.setCursorPos(1,1)
+    local i = 1
+    if found then
+        for key, value in pairs(temp) do
+            term.setCursorPos(1,i)
+            term.write(string.format("%s: %s",value.name,value.count))
+            i = i + 1
+        end
+    end
 end
 
 local function itemSort(itemId)
@@ -183,7 +204,7 @@ local function wait_for_key()
 end
 
 local function idle()
-    parallel.waitForAny(browse,wait_for_key)
+    parallel.waitForAll(browse,wait_for_key)
 end
 
 function main()
@@ -197,13 +218,18 @@ function main()
         end
     end
     CHESTS = chests
+    term.clear()
+    term.setCursorPos(1,1)
+    term.write(string.format("%s %i %s","found",c,"chests"))
+    term.setCursorPos(1,2)
+    term.write(string.format("%s","beginning to map items..."))
     mapItems()
 
     table.sort(ITEMLIST, function(a, b) return a.name:upper() < b.name:upper() end)
     for key, value in pairs(ITEMLIST) do
         KEYLIST[value.id] = key
     end
-    printItems(0)
+    printItems(0,ITEMLIST)
     -- print_r(ITEMLIST[1].details[1])
     -- print_r(ITEMLIST[1].details[2])
 
