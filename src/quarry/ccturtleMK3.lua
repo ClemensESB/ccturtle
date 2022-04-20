@@ -162,9 +162,13 @@ local function print_r(array)
 	end
 end
 -- math local functions
--- euler distance
-local function distance(a,b)
+-- euklid distance
+local function edistance(a,b)
 	local d = math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z))
+	return d
+end
+local function odistance(a,b)
+	local d = math.abs(a.x-b.x) + math.abs( a.y-b.y ) + math.abs( a.z-b.z)
 	return d
 end
 -- turtle functions
