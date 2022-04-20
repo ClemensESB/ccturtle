@@ -269,6 +269,9 @@ local function setPosition()
 		error( "No GPS available", 0 )
 	end
     POSITION = vector.new(x,y,z)
+	if fs.exists("/tMessage") then
+		shell.run('tMessage send msg "Turtle auf position: x='..POSITION.x..' z='..POSITION.z..' y='..POSITION.y..'" 128')
+	end
 end
 local function getSidePosition(face)
     setPosition()
