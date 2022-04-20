@@ -161,6 +161,12 @@ local function print_r(array)
 		print(string.format("%s: %s",i,v))
 	end
 end
+local function vecEqual(vec1,vec2)
+	if vec1.x == vec2.x and vec1.y == vec2.y and vec1.z == vec2.z then
+		return true
+	end
+	return false
+end
 -- math local functions
 -- euklid distance
 local function edistance(a,b)
@@ -268,10 +274,13 @@ local function setPosition()
     if not x then
 		error( "No GPS available", 0 )
 	end
-    POSITION = vector.new(x,y,z)
-	if fs.exists("/tMessage") then
-		shell.run('tMessage send msg "Turtle auf position: x='..POSITION.x..' z='..POSITION.z..' y='..POSITION.y..'" 128')
+	tempVec = vector.new(x,y,z)
+	if not vecEqual(tempVec,POSITION) then
+		if fs.exists("/tMessage") then
+			shell.run('tMessage send msg "Turtle auf position: x=' .. POSITION.x .. ' z=' .. POSITION.z .. ' y=' .. POSITION.y .. '" 128')
+		end
 	end
+	POSITION = tempVec
 end
 local function getSidePosition(face)
     setPosition()
