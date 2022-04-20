@@ -139,19 +139,19 @@ end
 function directionOfPoint(point)
 	--print(tostring(point))
 	--print(tostring(POSITION))
-	if point.x <= POSITION.x and point.z >= POSITION.z then
+	if point.x <= POSITION.x and point.z > POSITION.z then
 		-- south 0
 		print("south")
 		return 0
-	elseif point.x >= POSITION.x and point.z >= POSITION.z then
+	elseif point.x > POSITION.x and point.z >= POSITION.z then
 		-- east 3
 		print("east")
 		return 3
-	elseif point.x >= POSITION.x and point.z <= POSITION.z then
+	elseif point.x >= POSITION.x and point.z < POSITION.z then
 		-- north 2
 		print("north")
 		return 2
-	elseif point.x <= POSITION.x and point.z <= POSITION.z then
+	elseif point.x < POSITION.x and point.z <= POSITION.z then
 		-- west 1
 		print("west")
 		return 1
