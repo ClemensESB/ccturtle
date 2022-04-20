@@ -73,17 +73,17 @@ function strToVector(stringToConvert)
 	return ergVector
 end
 function setHome()
-    local x,y,z = gps.locate(1)
+    local x,z,y = gps.locate(1)
 	POSITION = vector.new(x,y,z)
     HOME.position = vector.new(x,y,z)
 end
 function setDirection()
-	local x, y, z = gps.locate( 1 )
+	local x, z, y = gps.locate( 1 )
 	if not x then
 		error( "No GPS available", 0 )
 	end
 	if turtle.forward() then
-		local nx, ny, nz = gps.locate( 1 )
+		local nx, nz, ny = gps.locate( 1 )
 		if x - nx == 1 then
 			-- West
 			HOME.facing = 1
@@ -101,7 +101,7 @@ function setDirection()
     FACING = HOME.facing
 end
 function setPosition()
-    local x,y,z = gps.locate(1)
+    local x,z,y = gps.locate(1)
     if not x then
 		error( "No GPS available", 0 )
 	end
@@ -141,19 +141,19 @@ function directionOfPoint(point)
 	--print(tostring(POSITION))
 	if point.x <= POSITION.x and point.z >= POSITION.z then
 		-- south 0
-		--print("south")
+		print("south")
 		return 0
 	elseif point.x >= POSITION.x and point.z >= POSITION.z then
 		-- east 3
-		--print("east")
+		print("east")
 		return 3
 	elseif point.x >= POSITION.x and point.z <= POSITION.z then
 		-- north 2
-		--print("north")
+		print("north")
 		return 2
 	elseif point.x <= POSITION.x and point.z <= POSITION.z then
 		-- west 1
-		--print("west")
+		print("west")
 		return 1
 	else
 		-- looking in wrong direction
@@ -235,7 +235,8 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
 	end
     -- end of file descriptor
     local information = {
-        lines = c
+        lines = c,
+		start = startPoint
     }
     file:write(textutils.serializeJSON(information))
 	file:close()

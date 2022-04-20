@@ -236,17 +236,17 @@ local function invEmpty()
 	return true
 end
 local function setHome()
-    local x,y,z = gps.locate(1)
+    local x,z,y = gps.locate(1)
 	POSITION = vector.new(x,y,z)
     HOME.position = vector.new(x,y,z)
 end
 local function setDirection()
-	local x, y, z = gps.locate( 1 )
+	local x, z, y = gps.locate( 1 )
 	if not x then
 		error( "No GPS available", 0 )
 	end
 	if turtle.forward() then
-		local nx, ny, nz = gps.locate( 1 )
+		local nx, nz, ny = gps.locate( 1 )
 		if x - nx == 1 then
 			-- West
 			HOME.facing= 1
@@ -264,7 +264,7 @@ local function setDirection()
     FACING = HOME.facing
 end
 local function setPosition()
-    local x,y,z = gps.locate(1)
+    local x,z,y = gps.locate(1)
     if not x then
 		error( "No GPS available", 0 )
 	end
@@ -449,7 +449,6 @@ local function returnToJob()
 	end
 end
 local function adjectedInventoryFull()
-
 end
 local function locateChests()
 	local temp = FACING
@@ -553,6 +552,7 @@ local function parseJob(startLine,endLine)
 		end
 	end
 	JOB.koords = erg
+	
 	return true
 end
 -- end job functions
