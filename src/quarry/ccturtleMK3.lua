@@ -31,9 +31,12 @@ TURTLEDATA = {
 	minedBlockTypes = {},
 	minedBlocks = 0,
 	estimatedBlocks = 0,
-	speed = 0.0
+	speed = 0.0,
+	estimatedTIme = 0.0,
+	startTime = os.epoch("local")
+	runtime = 0.0
 }
-OLDTIME = os.epoch()
+OLDTIME = os.epoch("local")
 
 -- // --- will be kept in inventory ---
 ITEMS = {
@@ -288,10 +291,13 @@ local function setPosition()
 	end
 	tempVec = vector.new(x,y,z)
 	if not vecEqual(tempVec,POSITION) then
-		local speed = os.epoch() - OLDTIME --ms seit der letzten positionsänderung
-		OLDTIME = os.epoch()
-		local speedPerHour = (speed / 1000)*60*60 --mined blocks per hour
+		local speed = os.epoch("local") - OLDTIME --ms seit der letzten positionsänderung
+		OLDTIME = os.epoch("local")
+		local speedPerHour = (speed / 1000) / 60 / 60 --mined blocks per hour
+		local estTime = TURTLEDATA.estimatedBlocks / speedPerHour
+		TURTLEDATA.estimatedTIme = estTime
 		TURTLEDATA.speed = speedPerHour
+		TURTLEDATA.runtime = (os.epoch("local") - TURTLEDATA.startTime) / 1000 / 60 / 60 --runtime in hours
 		local CCMessage = require("ccMessage")
 		local CCModem = require("ccModem")
 		local msg = CCMessage.CCMessage:create("turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
