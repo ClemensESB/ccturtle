@@ -1,15 +1,21 @@
-message = {}
-message.__index = message
-function message:create(typ, data, addInfo,target)
-    local msg = {}
-    setmetatable(msg, message)
-    msg.header = {
-        type = typ,
-        info = addInfo,
-        targetChannel = target
-    }
-    msg.data = data
-    return msg
+CCMessage = {
+    header = {
+        type = "typ",
+        info = "info",
+        targetChannel = 1,
+        sender = ""
+    },
+    data = nil
+}
+function CCMessage:create(o, typ, data, addInfo, target, sender)
+    o = o or {}
+    setmetatable(o,self)
+    self.header.type = typ
+    self.header.info = addInfo
+    self.header.targetChannel = target
+    self.sender = sender
+    self.data = data
+    return o
 end
 
-return {message = message}
+return { CCMessage = CCMessage }

@@ -20,9 +20,6 @@
 -- erze gesammelt tracking
 
 -- idee sklave der die erze trägt
-require("Message")
-require("ccModem")
-
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
@@ -397,9 +394,10 @@ local function dig(digDirection)
 	end
 	TURTLEDATA.fuel = turtle.getFuelLevel()
 	TURTLEDATA.minedBlocks = TURTLEDATA.minedBlocks + 1
-
-	local msg = message:create("turtleStatus",TURTLEDATA,"running",128)
-	local modem = ccModem:create()
+	local CCMessage = require("ccMessage")
+	local CCModem = require("ccModem")
+	local msg = CCMessage.CCMessage:create(nil, "turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
+	local modem = CCModem.CCModem:create()
 	modem:send(128,129,msg)
 	return true
 end

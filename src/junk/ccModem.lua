@@ -1,3 +1,4 @@
+-- Class Declaration
 CCModem = { 
     side = '',
     modem = nil
