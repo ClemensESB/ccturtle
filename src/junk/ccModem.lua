@@ -1,8 +1,11 @@
-ccModem = {}
-ccModem.__index = ccModem
-function ccModem:create()
-    local properties = {}
-    setmetatable(properties, modem)
+CCModem = { 
+    side = '',
+    modem = nil
+}
+function CCModem:create(o)
+    o = o or {}
+    setmetatable(o,self)
+    self.__index = self
     local devices = peripheral.getNames()
     local device = nil
     local side = nil
@@ -12,29 +15,27 @@ function ccModem:create()
             side = tempSide
         end
     end
-    properties = {
-        side = side,
-        modem = device,
-    }
-    return properties
+    self.side = side
+    self.modem = device
+    return o
 end
-function ccModem:send(channel, reply, message)
+function CCModem:send(channel, reply, message)
     self.properties.modem.transmit(channel,reply, message)
 end
 
-function ccModem:listenOn(channel)
+function CCModem:listenOn(channel)
     if not self.properties.modem.isOpen(channel) then
         self.properties.modem.open(channel)
     end
 end
-function ccModem:receive()
+function CCModem:receive()
     local event, side, channel, replyChannel, answer, distance = os.pullEvent("modem_message")
     --print_r({ event, side, channel, replyChannel, distance })
     --print_r(answer)
     return answer
 end
-function ccModem:close()
+function CCModem:close()
     self.properties.modem.closeAll()
 end
 
-return { ccModem = ccModem }
+return { CCModem = CCModem }

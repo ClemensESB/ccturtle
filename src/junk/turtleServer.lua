@@ -7,7 +7,7 @@ local function print_r(array)
         print(string.format("%s: %s", i, v))
     end
 end
-modem:listenOn(128)
+modem.listenOn(128)
 while true do
     local turtleInformation = modem:receive()
     shell.run("clear")
