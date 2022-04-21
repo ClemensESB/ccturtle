@@ -237,7 +237,7 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
     local information = {
         lines = c,
 		start = startPoint,
-		estimatedBlocks = (c * math.ceil(depth / 3) * width) * 2
+		estimatedBlocks = (c * math.ceil(depth / 3) * (width + 1) + (depth - math.ceil(depth / 3))) * 2
     }
     file:write(textutils.serializeJSON(information))
 	file:close()
