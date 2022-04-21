@@ -294,9 +294,11 @@ local function setPosition()
 		TURTLEDATA.speed = speedPerHour
 		local CCMessage = require("ccMessage")
 		local CCModem = require("ccModem")
-		local msg = CCMessage.CCMessage:create(nil, "turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
+		local msg = CCMessage.CCMessage:create("turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
 		local modem = CCModem.CCModem:create()
-		modem:send(128, 129, msg)
+		print_r(msg)
+		print(msg.header.typ)
+		modem:send(128, 129,msg:toJson())
 	end
 	POSITION = tempVec
 end
