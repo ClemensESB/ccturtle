@@ -292,10 +292,11 @@ local function setPosition()
 		OLDTIME = os.epoch()
 		local speedPerHour = (speed / 1000)*60*60 --mined blocks per hour
 		TURTLEDATA.speed = speedPerHour
-		if fs.exists("/tMessage") then
-			local mesg = textutils.serialiseJSON(TURTLEDATA)
-			shell.run('tMessage send msg "' .. mesg .. '" 128')
-		end
+		local CCMessage = require("ccMessage")
+		local CCModem = require("ccModem")
+		local msg = CCMessage.CCMessage:create(nil, "turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
+		local modem = CCModem.CCModem:create()
+		modem:send(128, 129, msg)
 	end
 	POSITION = tempVec
 end
@@ -394,11 +395,6 @@ local function dig(digDirection)
 	end
 	TURTLEDATA.fuel = turtle.getFuelLevel()
 	TURTLEDATA.minedBlocks = TURTLEDATA.minedBlocks + 1
-	local CCMessage = require("ccMessage")
-	local CCModem = require("ccModem")
-	local msg = CCMessage.CCMessage:create(nil, "turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
-	local modem = CCModem.CCModem:create()
-	modem:send(128,129,msg)
 	return true
 end
 local function move(targetVector)
