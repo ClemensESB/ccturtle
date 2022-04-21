@@ -17,5 +17,7 @@ function CCMessage:create(o, typ, data, addInfo, target, sender)
     self.data = data
     return o
 end
-
+function CCMessage:toJson()
+    return textutils.serialiseJSON(self)
+end
 return { CCMessage = CCMessage }

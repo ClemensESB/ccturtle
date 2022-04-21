@@ -10,5 +10,5 @@ modem:listenOn(128)
 while true do
     local turtleInformation = modem:receive()
     shell.run("clear")
-    print_r(turtleInformation)
+    print(turtleInformation)
 end

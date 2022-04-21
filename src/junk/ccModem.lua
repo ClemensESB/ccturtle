@@ -21,7 +21,7 @@ function CCModem:create(o)
     return o
 end
 function CCModem:send(channel, reply, message)
-    self.properties.modem.transmit(channel,reply, message)
+    self.modem.transmit(channel,reply, message)
 end
 
 function CCModem:listenOn(channel)
