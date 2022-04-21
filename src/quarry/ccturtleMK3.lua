@@ -393,7 +393,6 @@ local function dig(digDirection)
 	else
 		TURTLEDATA["minedBlockTypes"][blockname] = 1
 	end
-	TURTLEDATA.fuel = turtle.getFuelLevel()
 	TURTLEDATA.minedBlocks = TURTLEDATA.minedBlocks + 1
 	return true
 end
@@ -466,6 +465,7 @@ local function move(targetVector)
             refuel()
 		end
 	end
+	TURTLEDATA.fuel = turtle.getFuelLevel()
 	return true
 end
 local function scan(lookBack)

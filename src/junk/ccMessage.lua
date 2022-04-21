@@ -7,11 +7,11 @@ CCMessage = {
     },
     data = nil
 }
-function CCMessage:create(typ, data, addInfo, target, sender,o)
+function CCMessage:create(type, data, addInfo, target, sender,o)
     o = o or {}
     setmetatable(o,self)
     self.__index = self
-    self.header.type = typ
+    self.header.type = type
     self.header.info = addInfo
     self.header.targetChannel = target
     self.sender = sender
