@@ -24,8 +24,8 @@ function CCModem:send(channel, reply, message)
 end
 
 function CCModem:listenOn(channel)
-    if not self.properties.modem.isOpen(channel) then
-        self.properties.modem.open(channel)
+    if not self.modem.isOpen(channel) then
+        self.modem.open(channel)
     end
 end
 function CCModem:receive()
@@ -35,7 +35,7 @@ function CCModem:receive()
     return answer
 end
 function CCModem:close()
-    self.properties.modem.closeAll()
+    self.modem.closeAll()
 end
 
 return { CCModem = CCModem }
