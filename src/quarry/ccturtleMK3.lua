@@ -20,11 +20,21 @@
 -- erze gesammelt tracking
 
 -- idee sklave der die erze trägt
-
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
 OPERATIONSTART = nil
+
+TURTLEDATA = {
+	name = os.computerLabel(),
+	fuel = turtle.getFuelLevel(),
+	minedBlockTypes = {},
+	minedBlocks = 0,
+	estimatedBlocks = 0,
+	speed = 0.0
+}
+OLDTIME = os.epoch()
+
 -- // --- will be kept in inventory ---
 ITEMS = {
 	["chests"] = {
@@ -61,6 +71,8 @@ NOT_BREAKABLE = {
 ADDITIONAL_ORES = {
 	["blackQuarz"] = "actuallyadditions:block_misc"
 }
+
+
 
 posStack = {}
 posStack.__index = posStack
@@ -276,8 +288,13 @@ local function setPosition()
 	end
 	tempVec = vector.new(x,y,z)
 	if not vecEqual(tempVec,POSITION) then
+		local speed = os.epoch() - OLDTIME --ms seit der letzten positionsänderung
+		OLDTIME = os.epoch()
+		local speedPerHour = (speed / 1000)*60*60 --mined blocks per hour
+		TURTLEDATA.speed = speedPerHour
 		if fs.exists("/tMessage") then
-			shell.run('tMessage send msg "Turtle auf position: x=' .. POSITION.x .. ' z=' .. POSITION.z .. ' y=' .. POSITION.y .. '" 128')
+			local mesg = textutils.serialiseJSON(TURTLEDATA)
+			shell.run('tMessage send msg "' .. mesg .. '" 128')
 		end
 	end
 	POSITION = tempVec
@@ -349,6 +366,35 @@ local function scanSide(side)
 	end
 	return success,erg
 end
+local function dig(digDirection)
+	local blockname = ""
+	if digDirection == "up" then
+		local success, erg = turtle.inspectUp()
+		if turtle.digUp() then
+			blockname = erg.name
+		end
+	elseif digDirection == "down" then
+		local success, erg = turtle.inspectDown()
+		if turtle.digDown() then
+			blockname = erg.name
+		end
+	elseif digDirection == "forward" then
+		local success, erg = turtle.inspect()
+		if turtle.dig() then
+			blockname = erg.name
+		end
+	else
+		return false
+	end
+
+	if TURTLEDATA["minedBlockTypes"][blockname] ~= nil then
+		TURTLEDATA["minedBlockTypes"][blockname] = TURTLEDATA["minedBlockTypes"][blockname] + 1
+	else
+		TURTLEDATA["minedBlockTypes"][blockname] = 1
+	end
+	TURTLEDATA.minedBlocks = TURTLEDATA.minedBlocks + 1
+	return true
+end
 local function move(targetVector)
 	if targetVector == nil then return end
     setPosition()
@@ -356,7 +402,7 @@ local function move(targetVector)
 	if targetVector.y > POSITION.y then
 		while targetVector.y > POSITION.y do
 			while turtle.detectUp() do
-				turtle.digUp()
+				dig("up")
 			end
             turtle.up()
             setPosition()
@@ -365,7 +411,7 @@ local function move(targetVector)
 	elseif targetVector.y < POSITION.y then
 		while targetVector.y < POSITION.y do
 			while turtle.detectDown() do
-				turtle.digDown()
+				dig("down")
 			end
 			turtle.down()
             setPosition()
@@ -378,7 +424,7 @@ local function move(targetVector)
 		turn(0)
 		while targetVector.z > POSITION.z do
 			while turtle.detect() do
-				turtle.dig()
+				dig("forward")
 			end
 			turtle.forward()
 			setPosition()
@@ -388,7 +434,7 @@ local function move(targetVector)
 		turn(2)
 		while targetVector.z < POSITION.z do
 			while turtle.detect() do
-				turtle.dig()
+				dig("forward")
 			end
 			turtle.forward()
 			setPosition()
@@ -401,7 +447,7 @@ local function move(targetVector)
 		turn(3)
 		while targetVector.x > POSITION.x do
 			while turtle.detect() do
-				turtle.dig()
+				dig("forward")
 			end
 			turtle.forward()
 			setPosition()
@@ -411,7 +457,7 @@ local function move(targetVector)
 		turn(1)
 		while targetVector.x < POSITION.x do
 			while turtle.detect() do
-				turtle.dig()
+				dig("forward")
 			end
 			turtle.forward()
 			setPosition()
@@ -489,7 +535,7 @@ local function putInChest()
 	refuel()
 	if invFull() then
 		local chest = -1
-		for k,v in pairs(ITEMS[VERSION]) do
+		for k, v in pairs(ITEMS["chests"][VERSION]) do
 			if chest == -1 then
 				chest = searchItem(v)
 			end
@@ -497,7 +543,7 @@ local function putInChest()
 		if chest ~= -1 then
 			turtle.select(chest)
 			if turtle.detectUp() then
-				turtle.digUp()
+				dig("up")
 			end
 			turtle.placeUp()
 			local coal = searchItem(FUEL["coal"])
@@ -510,7 +556,7 @@ local function putInChest()
 					end
 				end
 			end
-			turtle.digUp()
+			turtle.digUp() -- hier damit die chest nicht mitgezählt wird
 		else
 			print("no usable chest found!")
 			goHome()
@@ -547,6 +593,7 @@ local function parseJob(startLine,endLine)
 
 	if endLine < 0 or endLine > information.lines then
 		endLine = information.lines
+		TURTLEDATA.estimatedBlocks = information.estimatedBlocks
 	end
 
 	for i = startLine, endLine do

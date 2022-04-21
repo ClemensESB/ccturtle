@@ -236,7 +236,8 @@ function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, 
     -- end of file descriptor
     local information = {
         lines = c,
-		start = startPoint
+		start = startPoint,
+		estimatedBlocks = (c * math.ceil(depth / 3) * width) * 2
     }
     file:write(textutils.serializeJSON(information))
 	file:close()

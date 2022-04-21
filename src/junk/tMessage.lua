@@ -4,18 +4,7 @@ MODEM = nil
 REPLY = 128
 SEND = 128
 
-message = {}
-message.__index = message
-function message:create(typ,data,addInfo)
-	local msg = {}
-	setmetatable(msg,message)
-	msg.header = {
-        type = typ,
-        info = addInfo
-    }
-    msg.data = data
-	return msg
-end
+require("Message")
 
 for key, side in pairs(devices) do
     if peripheral.getType(side) == "modem" then
@@ -56,7 +45,7 @@ if #arg >= 1 and arg[1] == "send" then
         if arg[4] ~= nil then
             channel = tonumber(arg[4])
         end
-        local msg = message:create("text",text,{})
+        local msg = message:create("text", text, {}, channel)
         send(msg,channel)
     elseif arg[2] == "file" then
         local filename = tostring(arg[3])
@@ -70,7 +59,7 @@ if #arg >= 1 and arg[1] == "send" then
             c = c + 1
             data[c] = line
         end
-        local msg = message:create("file",data,{filename = filename})
+        local msg = message:create("file", data, { filename = filename }, channel)
         send(msg,channel)
         getAnswer()
     elseif arg[2] == "run" then
@@ -79,19 +68,19 @@ if #arg >= 1 and arg[1] == "send" then
         if arg[4] ~= nil then
             channel = tonumber(arg[4])
         end
-        local msg = message:create("run",program,{})
+        local msg = message:create("run", program, {}, channel)
         send(msg,channel)
         getAnswer()
     elseif arg[2] == "turtle" then
         if arg[3] == "here" then
             local x,y,z = gps.locate(1)
             local program = "buildJob.lua "..math.floor(x).." "..(math.floor(y)-1).." "..math.floor(z).." "..arg[4].." "..arg[5].." "..arg[6]
-            local msg = message:create("run",program,{})
+            local msg = message:create("run", program, {}, SEND)
             send(msg,SEND)
             getAnswer()
         elseif arg[3] == "start" then
             local program = "ccturtleVan.lua"
-            local msg = message:create("run",program,{})
+            local msg = message:create("run", program, {}, SEND)
             send(msg,SEND)
             getAnswer()
         end
@@ -109,7 +98,7 @@ elseif #arg >= 1 and arg[1] == "listen" then
     elseif answer.header.type == "run" then
         shell.run(answer.data)
         MODEM.closeAll()
-        local msg = message:create("text","program sucessfully run",{})
+        local msg = message:create("text", "program sucessfully run", {}, replyChannel)
         send(msg,replyChannel)
         shell.run("tMessage listen")
     elseif answer.header.type == "file" then
@@ -118,7 +107,7 @@ elseif #arg >= 1 and arg[1] == "listen" then
             file:write(content,"\n")
         end
         file:close()
-        local msg = message:create("text","file transfered",{})
+        local msg = message:create("text", "file transfered", {}, replyChannel)
         send(msg,replyChannel)
         MODEM.closeAll()
         shell.run("tMessage listen")
