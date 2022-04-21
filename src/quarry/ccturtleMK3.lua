@@ -33,7 +33,7 @@ TURTLEDATA = {
 	estimatedBlocks = 0,
 	speed = 0.0,
 	estimatedTIme = 0.0,
-	startTime = os.epoch("local")
+	startTime = os.epoch("local"),
 	runtime = 0.0
 }
 OLDTIME = os.epoch("local")
@@ -293,9 +293,8 @@ local function setPosition()
 	if not vecEqual(tempVec,POSITION) then
 		local speed = os.epoch("local") - OLDTIME --ms seit der letzten positionsänderung
 		OLDTIME = os.epoch("local")
-		local speedPerHour = (speed / 1000) / 60 / 60 --mined blocks per hour
-		local estTime = TURTLEDATA.estimatedBlocks / speedPerHour
-		TURTLEDATA.estimatedTIme = estTime
+		local speedPerHour = 60 / ((speed / 1000) / 60) --blocks per hour
+		TURTLEDATA.estimatedTIme = TURTLEDATA.estimatedBlocks / speedPerHour
 		TURTLEDATA.speed = speedPerHour
 		TURTLEDATA.runtime = (os.epoch("local") - TURTLEDATA.startTime) / 1000 / 60 / 60 --runtime in hours
 		local CCMessage = require("ccMessage")
