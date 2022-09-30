@@ -81,16 +81,18 @@ posStack = {}
 posStack.__index = posStack
 function posStack:create()
 	local stack = {}
-	setmetatable(stack,posStack)
+	setmetatable(stack, posStack)
 	stack.index = 0
 	stack.entry = {}
 	return stack
 end
+
 function posStack:push(pos)
 	self.index = self.index + 1
 	self.entry[self.index] = pos
 	return true
 end
+
 function posStack:pop()
 	if self.index > 0 then
 		local erg = self.entry[self.index]
@@ -100,9 +102,10 @@ function posStack:pop()
 	end
 	return false
 end
+
 function posStack:inStack(pos)
 	local erg = false
-	for i=1,self.index do
+	for i = 1, self.index do
 		local posTest = self.entry[i]
 		if posTest.x == pos.x and posTest.y == pos.y and posTest.z == pos.z then
 			erg = true
@@ -111,12 +114,15 @@ function posStack:inStack(pos)
 	end
 	return erg
 end
+
 function posStack:isempty()
 	return self.index <= 0
 end
+
 function posStack:getIndex()
 	return self.index
 end
+
 function posStack:getByIndex(i)
 	return self.entry[i]
 end
@@ -134,22 +140,24 @@ JOB = {
 
 -- // --- END of global Variables ---
 -- nützliche logik
-local function inArray(needle,haystack)
-	for key,value in pairs(haystack) do
+local function inArray(needle, haystack)
+	for key, value in pairs(haystack) do
 		if needle == value then
 			return true
 		end
 	end
 	return false
 end
-local function strContains(needle,haystack)
-	local first,last = string.find(haystack,needle)
+
+local function strContains(needle, haystack)
+	local first, last = string.find(haystack, needle)
 	if first ~= nil and last ~= nil then
 		return true
 	else
 		return false
 	end
 end
+
 local function strToArray(stringToConvert)
 	local erg = {}
 	local i = 1
@@ -161,6 +169,7 @@ local function strToArray(stringToConvert)
 	end
 	return erg
 end
+
 local function strToVector(stringToConvert)
 	local temp = {}
 	local i = 1
@@ -168,35 +177,45 @@ local function strToVector(stringToConvert)
 		temp[i] = tonumber(param)
 		i = i + 1
 	end
-	local ergVector = vector.new(temp[1],temp[2],temp[3])
+	local ergVector = vector.new(temp[1], temp[2], temp[3])
 	return ergVector
 end
+
 local function print_r(array)
-	for i,v in pairs(array) do
-		print(string.format("%s: %s",i,v))
+	for i, v in pairs(array) do
+		if type(v) == "table" then
+			print_r(v)
+		else
+			print(string.format("%s: %s", i, v))
+		end
+
 	end
 end
-local function vecEqual(vec1,vec2)
+
+local function vecEqual(vec1, vec2)
 	if vec1.x == vec2.x and vec1.y == vec2.y and vec1.z == vec2.z then
 		return true
 	end
 	return false
 end
+
 -- math local functions
 -- euklid distance
-local function edistance(a,b)
-	local d = math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z))
+local function edistance(a, b)
+	local d = math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z))
 	return d
 end
-local function odistance(a,b)
-	local d = math.abs(a.x-b.x) + math.abs( a.y-b.y ) + math.abs( a.z-b.z)
+
+local function odistance(a, b)
+	local d = math.abs(a.x - b.x) + math.abs(a.y - b.y) + math.abs(a.z - b.z)
 	return d
 end
+
 -- turtle functions
 local function searchItem(itemstring)
 	turtle.select(1)
 	local erg = -1
-	for i = 1,16 do
+	for i = 1, 16 do
 		if turtle.getItemCount(i) > 0 then
 			local item = turtle.getItemDetail(i)
 			if item.name == itemstring then
@@ -210,10 +229,11 @@ local function searchItem(itemstring)
 	end
 	return erg
 end
+
 local function refuel()
 	local fuelLevel = turtle.getFuelLevel()
 	local fuel = -1
-	for key,value in pairs(FUEL) do
+	for key, value in pairs(FUEL) do
 		if fuel == -1 then
 			fuel = searchItem(value)
 		end
@@ -223,7 +243,7 @@ local function refuel()
 			turtle.select(fuel)
 			turtle.refuel()
 		else
-			print("turtle needs fuel fuellevel: "..fuelLevel)
+			print("turtle needs fuel fuellevel: " .. fuelLevel)
 		end
 	elseif fuelLevel < 5000 then
 		if fuel > 0 then
@@ -237,10 +257,11 @@ local function refuel()
 	end
 	return true
 end
+
 local function invFull()
 	turtle.select(1)
 	local erg = false
-	for i=1,16 do
+	for i = 1, 16 do
 		if turtle.getItemCount(i) == 0 then
 			return false
 		end
@@ -248,29 +269,33 @@ local function invFull()
 	print("inventory full")
 	return true
 end
+
 local function invEmpty()
-	for i=1,16 do
+	for i = 1, 16 do
 		if turtle.getItemCount(i) ~= 0 then
 			return false
 		end
 	end
 	return true
 end
+
 local function setHome()
-    local x,z,y = gps.locate(1)
-	POSITION = vector.new(x,y,z)
-    HOME.position = vector.new(x,y,z)
+	local x, y, z = gps.locate(1)
+	POSITION = vector.new(x, y, z)
+	HOME.position = vector.new(x, y, z)
 end
+
 local function setDirection()
-	local x, z, y = gps.locate( 1 )
+	local x, y, z = gps.locate(1)
 	if not x then
-		error( "No GPS available", 0 )
+		error("No GPS available", 0)
 	end
 	if turtle.forward() then
-		local nx, nz, ny = gps.locate( 1 )
+		local nx, ny, nz = gps.locate(1)
+
 		if x - nx == 1 then
 			-- West
-			HOME.facing= 1
+			HOME.facing = 1
 		elseif x - nx == -1 then
 			-- East
 			HOME.facing = 3
@@ -282,15 +307,16 @@ local function setDirection()
 			HOME.facing = 0
 		end
 	end
-    FACING = HOME.facing
+	FACING = HOME.facing
 end
+
 local function setPosition()
-    local x,z,y = gps.locate(1)
-    if not x then
-		error( "No GPS available", 0 )
+	local x, y, z = gps.locate(1)
+	if not x then
+		error("No GPS available", 0)
 	end
-	tempVec = vector.new(x,y,z)
-	if not vecEqual(tempVec,POSITION) then
+	tempVec = vector.new(x, y, z)
+	if not vecEqual(tempVec, POSITION) then
 		local speed = os.epoch("local") - OLDTIME --ms seit der letzten positionsänderung
 		OLDTIME = os.epoch("local")
 		local speedPerHour = 60 / ((speed / 1000) / 60) --blocks per hour
@@ -301,33 +327,35 @@ local function setPosition()
 		local CCModem = require("ccModem")
 		local msg = CCMessage.CCMessage:create("turtleStatus", TURTLEDATA, "running", 128, TURTLEDATA.name)
 		local modem = CCModem.CCModem:create()
-		modem:send(128, 129,textutils.serialiseJSON({msg.header,msg.data}))
+		modem:send(128, 129, textutils.serialiseJSON({ msg.header, msg.data }))
 	end
 	POSITION = tempVec
 end
+
 local function getSidePosition(face)
-    setPosition()
-    local erg = vector.new(POSITION.x,POSITION.y,POSITION.z)
-	local vectorX = vector.new(1,0,0)
-	local vectorY = vector.new(0,1,0)
-	local vectorZ = vector.new(0,0,1)
+	setPosition()
+	local erg = vector.new(POSITION.x, POSITION.y, POSITION.z)
+	local vectorX = vector.new(1, 0, 0)
+	local vectorY = vector.new(0, 1, 0)
+	local vectorZ = vector.new(0, 0, 1)
 	if face == 2 then --north
 		erg = erg - vectorZ
-	elseif	face == 0 then --south
+	elseif face == 0 then --south
 		erg = erg + vectorZ
-	elseif	face == 1 then --west
+	elseif face == 1 then --west
 		erg = erg - vectorX
-	elseif	face == 3 then --east
+	elseif face == 3 then --east
 		erg = erg + vectorX
-	elseif	face == 4 then --up
+	elseif face == 4 then --up
 		erg = erg + vectorY
-	elseif	face == 5 then --down
+	elseif face == 5 then --down
 		erg = erg - vectorY
 	else
 		erg = false
 	end
 	return erg
 end
+
 -- end of turtle functions
 
 -- start of control block
@@ -335,7 +363,7 @@ local function turn(direction)
 	local turnDirection = direction % 4
 	local n = FACING - turnDirection
 	if n < 0 then
-		n = n*(-1)
+		n = n * (-1)
 	end
 	if n == 2 then
 		turtle.turnRight()
@@ -358,20 +386,22 @@ local function turn(direction)
 	FACING = turnDirection
 	return true
 end
+
 local function scanSide(side)
-	local success,erg
+	local success, erg
 	if side <= 3 then
 		turn(side)
-		success,erg = turtle.inspect()
+		success, erg = turtle.inspect()
 	elseif side == 4 then
-		success,erg = turtle.inspectUp()
+		success, erg = turtle.inspectUp()
 	elseif side == 5 then
-		success,erg = turtle.inspectDown()
+		success, erg = turtle.inspectDown()
 	else
 		return false
 	end
-	return success,erg
+	return success, erg
 end
+
 local function dig(digDirection)
 	local blockname = ""
 	if digDirection == "up" then
@@ -401,18 +431,19 @@ local function dig(digDirection)
 	TURTLEDATA.minedBlocks = TURTLEDATA.minedBlocks + 1
 	return true
 end
+
 local function move(targetVector)
 	if targetVector == nil then return end
-    setPosition()
-    -- oben unten als erstes brute forced
+	setPosition()
+	-- oben unten als erstes brute forced
 	if targetVector.y > POSITION.y then
 		while targetVector.y > POSITION.y do
 			while turtle.detectUp() do
 				dig("up")
 			end
-            turtle.up()
-            setPosition()
-            refuel()
+			turtle.up()
+			setPosition()
+			refuel()
 		end
 	elseif targetVector.y < POSITION.y then
 		while targetVector.y < POSITION.y do
@@ -420,8 +451,8 @@ local function move(targetVector)
 				dig("down")
 			end
 			turtle.down()
-            setPosition()
-            refuel()
+			setPosition()
+			refuel()
 		end
 	else
 	end
@@ -434,7 +465,7 @@ local function move(targetVector)
 			end
 			turtle.forward()
 			setPosition()
-            refuel()
+			refuel()
 		end
 	elseif targetVector.z < POSITION.z then -- geh nach norden
 		turn(2)
@@ -444,11 +475,11 @@ local function move(targetVector)
 			end
 			turtle.forward()
 			setPosition()
-            refuel()
+			refuel()
 		end
 	else
 	end
-    -- x als letztes
+	-- x als letztes
 	if targetVector.x > POSITION.x then -- geh nach osten
 		turn(3)
 		while targetVector.x > POSITION.x do
@@ -457,7 +488,7 @@ local function move(targetVector)
 			end
 			turtle.forward()
 			setPosition()
-            refuel()
+			refuel()
 		end
 	elseif targetVector.x < POSITION.x then -- geh nach westen
 		turn(1)
@@ -467,35 +498,37 @@ local function move(targetVector)
 			end
 			turtle.forward()
 			setPosition()
-            refuel()
+			refuel()
 		end
 	end
 	TURTLEDATA.fuel = turtle.getFuelLevel()
 	return true
 end
+
 local function scan(lookBack)
 	local temp = FACING
 	local tempTable = nil
 	local ergTable = {}
 	local back = -1
 	if lookBack then
-		back = (temp+2)%4
+		back = (temp + 2) % 4
 	else
 		back = temp
 	end
 	local a = 0
-	local sideArray = {(temp-1)%4,back,(temp+1)%4,temp,4,5}
-	for index,value in pairs(sideArray) do
-		local success,tempTable = scanSide(value)
+	local sideArray = { (temp - 1) % 4, back, (temp + 1) % 4, temp, 4, 5 }
+	for index, value in pairs(sideArray) do
+		local success, tempTable = scanSide(value)
 		if success then
-			if (strContains("ore",tempTable.name) or inArray(tempTable.name,ADDITIONAL_ORES)) and not inArray(tempTable.name,NOT_BREAKABLE) then
-				a = a+1
+			if (strContains("ore", tempTable.name) or inArray(tempTable.name, ADDITIONAL_ORES)) and
+				not inArray(tempTable.name, NOT_BREAKABLE) then
+				a = a + 1
 				ergTable[a] = getSidePosition(value)
 			end
 		end
 	end
 	turn(temp)
-	return a,ergTable
+	return a, ergTable
 end
 
 local function goHome()
@@ -506,6 +539,7 @@ local function goHome()
 	end
 	turn(HOME.facing)
 end
+
 local function returnToJob()
 	while not JOB.path:isempty() do
 		local temp = JOB.path:pop()
@@ -513,17 +547,19 @@ local function returnToJob()
 		HOME.path:push(temp)
 	end
 end
+
 local function adjectedInventoryFull()
 end
+
 local function locateChests()
 	local temp = FACING
-	local sideArray = {(temp-1) % 4,(temp+1) % 4}
+	local sideArray = { (temp - 1) % 4, (temp + 1) % 4 }
 	turtle.select(1)
 	local canUp = false
 	while not invEmpty() do
-		for index,value in pairs(sideArray) do
-			local success,tempTable = scanSide(value)
-			if success and inArray(tempTable.name,ITEMS["chests"])  then
+		for index, value in pairs(sideArray) do
+			local success, tempTable = scanSide(value)
+			if success and inArray(tempTable.name, ITEMS["chests"]) then
 				for slot = 1, 16 do
 					turtle.select(slot)
 					turtle.drop()
@@ -534,10 +570,11 @@ local function locateChests()
 			end
 		end
 		if canUp then
-			move(vector.new(POSITION.x,POSITION.y+1,POSITION.z))
+			move(vector.new(POSITION.x, POSITION.y + 1, POSITION.z))
 		end
 	end
 end
+
 local function putInChest()
 	refuel()
 	if invFull() then
@@ -554,11 +591,11 @@ local function putInChest()
 			end
 			turtle.placeUp()
 			local coal = searchItem(FUEL["coal"])
-			for i=1,16 do
+			for i = 1, 16 do
 				if i ~= coal then
 					turtle.select(i)
 					local currItem = turtle.getItemDetail(i)
-					if currItem ~= nil and not inArray(currItem.name,ITEMS) then
+					if currItem ~= nil and not inArray(currItem.name, ITEMS) then
 						turtle.dropUp()
 					end
 				end
@@ -572,29 +609,32 @@ local function putInChest()
 		end
 	end
 end
+
 -- end of control block
 
 -- start Job functions input of target location
-local function fileLines (fileName)
-  local count = 0
-  for line in io.lines(fileName) do
-    count = count + 1
-  end
-  return count
+local function fileLines(fileName)
+	local count = 0
+	for line in io.lines(fileName) do
+		count = count + 1
+	end
+	return count
 end
-local function fileLine (fileName,lineNum)
-  local count = 0
-  for line in io.lines(fileName) do
-    count = count + 1
-    if count == lineNum then return line end
-  end
-  error(fileName .. " has fewer than " .. lineNum .. " lines.")
+
+local function fileLine(fileName, lineNum)
+	local count = 0
+	for line in io.lines(fileName) do
+		count = count + 1
+		if count == lineNum then return line end
+	end
+	error(fileName .. " has fewer than " .. lineNum .. " lines.")
 end
-local function parseJob(startLine,endLine)
+
+local function parseJob(startLine, endLine)
 	local temp = {}
 	local c = 1
 	local lines = fileLines("job.json")
-	local information = textutils.unserializeJSON(fileLine("job.json",lines))
+	local information = textutils.unserializeJSON(fileLine("job.json", lines))
 
 	print_r(information)
 
@@ -604,30 +644,30 @@ local function parseJob(startLine,endLine)
 	end
 
 	for i = startLine, endLine do
-		temp[c] = textutils.unserializeJSON(fileLine("job.json",i))
+		temp[c] = textutils.unserializeJSON(fileLine("job.json", i))
 		c = c + 1
 	end
 	local erg = {}
 	local i = 1
-	OPERATIONSTART = vector.new(information.start.x,information.start.y,information.start.z)
+	OPERATIONSTART = vector.new(information.start.x, information.start.y, information.start.z)
 	for ebene, vecTable in pairs(temp) do
 		local tableLength = #(vecTable)
 		erg[ebene] = {}
 		for i = 1, tableLength do
-			erg[ebene][i] = vector.new(vecTable[i].x,vecTable[i].y,vecTable[i].z)
+			erg[ebene][i] = vector.new(vecTable[i].x, vecTable[i].y, vecTable[i].z)
 		end
 	end
 	JOB.koords = erg
-	
 	return true
 end
+
 -- end job functions
 
 -- start of mining functions
-local function fillOreStack(workStack,scanTable)
-	for index,value in pairs(scanTable) do
+local function fillOreStack(workStack, scanTable)
+	for index, value in pairs(scanTable) do
 		if value ~= nil then
-			local orePos = vector.new(value.x,value.y,value.z)
+			local orePos = vector.new(value.x, value.y, value.z)
 			if not workStack:inStack(orePos) then
 				workStack:push(orePos)
 			end
@@ -635,17 +675,18 @@ local function fillOreStack(workStack,scanTable)
 	end
 	return workStack
 end
+
 local function mineVein(vertical)
 	setPosition()
-	local start = vector.new(POSITION.x,POSITION.y,POSITION.z)
+	local start = vector.new(POSITION.x, POSITION.y, POSITION.z)
 	local direction = FACING
 	local orePosStack = posStack:create()
 	repeat
 		if not orePosStack:isempty() then
 			move(orePosStack:pop())
 		end
-		local succ,scanTable = scan(vertical)
-		orePosStack = fillOreStack(orePosStack,scanTable)
+		local succ, scanTable = scan(vertical)
+		orePosStack = fillOreStack(orePosStack, scanTable)
 		if invFull() then
 			HOME.path:push(start)
 			HOME.path:push(POSITION)
@@ -658,66 +699,72 @@ local function mineVein(vertical)
 	turn(direction)
 	return true
 end
+
 local function mineToTarget(target)
 	-- print(tostring(target))
 	setPosition()
 	while POSITION.y ~= target.y do
 		if POSITION.y > target.y then
 			mineVein(true)
-			move(vector.new(POSITION.x,POSITION.y - 1,POSITION.z))
+			move(vector.new(POSITION.x, POSITION.y - 1, POSITION.z))
 		else
 			mineVein(true)
-			move(vector.new(POSITION.x,POSITION.y + 1,POSITION.z))
+			move(vector.new(POSITION.x, POSITION.y + 1, POSITION.z))
 		end
 	end
 
 	while POSITION.x ~= target.x do
 		if POSITION.x > target.x then
 			mineVein(false)
-			move(vector.new(POSITION.x - 1,POSITION.y,POSITION.z))
+			move(vector.new(POSITION.x - 1, POSITION.y, POSITION.z))
 		else
 			mineVein(false)
-			move(vector.new(POSITION.x + 1,POSITION.y,POSITION.z))
+			move(vector.new(POSITION.x + 1, POSITION.y, POSITION.z))
 		end
 	end
 
 	while POSITION.z ~= target.z do
 		if POSITION.z > target.z then
 			mineVein(false)
-			move(vector.new(POSITION.x,POSITION.y,POSITION.z - 1))
+			move(vector.new(POSITION.x, POSITION.y, POSITION.z - 1))
 		else
 			mineVein(false)
-			move(vector.new(POSITION.x,POSITION.y,POSITION.z + 1))
+			move(vector.new(POSITION.x, POSITION.y, POSITION.z + 1))
 		end
 	end
 end
+
 local function mineJob()
 	HOME.path:push(HOME.position) -- home position
 	HOME.path:push(OPERATIONSTART) -- start operation position
+
+	print_r(OPERATIONSTART)
 	mineToTarget(OPERATIONSTART)
 	for key, ebene in pairs(JOB.koords) do
+		print_r(ebene)
 		local arrLength = #(ebene)
 		HOME.path:push(ebene[1]) -- start ebene position
 		HOME.path:push(ebene[1]) -- start ebene position
-		for i = 0, arrLength-1 do
-			mineToTarget(ebene[i+1])
+		for i = 0, arrLength - 1 do
+			mineToTarget(ebene[i + 1])
 			if i % 4 == 0 then
 				HOME.path:pop()
-				HOME.path:push(ebene[i+1]) -- start gang position
+				HOME.path:push(ebene[i + 1]) -- start gang position
 			end
 		end
 	end
 end
+
 -- end of mining functions
 
-local function main(startE,endE)
+local function main(startE, endE)
 	refuel()
 	setHome()
 	setDirection()
 	turtle.back()
 	HOME.facing = FACING
 	setPosition()
-	local succ = parseJob(startE,endE)
+	local succ = parseJob(startE, endE)
 	if succ then
 		mineJob()
 	end
@@ -729,7 +776,7 @@ local function main(startE,endE)
 end
 
 if #arg == 2 then
-	main(tonumber(arg[1]),tonumber(arg[2]))
+	main(tonumber(arg[1]), tonumber(arg[2]))
 else
-	main(1,-1)
+	main(1, -1)
 end
