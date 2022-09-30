@@ -18,8 +18,13 @@
 -- aufteilung eines jobs auf mehrere turtles
 -- jobübermittlung via wireless modem
 -- erze gesammelt tracking
-
 -- idee sklave der die erze trägt
+
+-- require("ccMessage")
+-- require("ccModem")
+
+
+
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
