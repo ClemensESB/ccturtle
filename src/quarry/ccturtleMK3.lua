@@ -112,7 +112,7 @@ function posStack:inStack(pos)
 	local erg = false
 	for i = 1, self.index do
 		local posTest = self.entry[i]
-		if posTest.x == pos.x and posTest.y == pos.y and posTest.z == pos.z then
+		if posTest == pos then
 			erg = true
 		else
 		end
@@ -130,6 +130,19 @@ end
 
 function posStack:getByIndex(i)
 	return self.entry[i]
+end
+
+function posStack:tostring()
+	local erg = ""
+	for key, value in pairs(self.entry) do
+		erg = erg .. "k:" .. key .. " v:" .. tostring(value) .. "\n"
+	end
+	return erg
+end
+
+function posStack:clear()
+	self.entry = {}
+	self.index = 0
 end
 
 HOME = {
@@ -163,11 +176,11 @@ local function strContains(needle, haystack)
 	end
 end
 
-local function strToArray(stringToConvert)
+local function strToArray(stringToConvert, limit)
 	local erg = {}
 	local i = 1
 	if stringToConvert ~= nil then
-		for param in stringToConvert:gmatch('[^,%s]+') do
+		for param in stringToConvert:gmatch('[^' .. limit .. '%s]+') do
 			erg[i] = param
 			i = i + 1
 		end
@@ -510,11 +523,10 @@ local function move(targetVector)
 	return true
 end
 
-local function scan(lookBack)
-	local temp = FACING
-	local tempTable = nil
-	local ergTable = {}
-	local back = -1
+local function scan(lookBack, checkedStack)
+	local temp = FACING -- alte richtung
+	local ergTable = {} -- ergebnis
+	local back = -1 -- rückrichtung
 	if lookBack then
 		back = (temp + 2) % 4
 	else
@@ -523,13 +535,18 @@ local function scan(lookBack)
 	local a = 0
 	local sideArray = { (temp - 1) % 4, back, (temp + 1) % 4, temp, 4, 5 }
 	for index, value in pairs(sideArray) do
-		local success, tempTable = scanSide(value)
-		if success then
-			if (strContains("ore", tempTable.name) or inArray(tempTable.name, ADDITIONAL_ORES)) and
-				not inArray(tempTable.name, NOT_BREAKABLE) then
-				a = a + 1
-				ergTable[a] = getSidePosition(value)
+		local sidePosition = getSidePosition(value)
+		if not checkedStack:inStack(sidePosition) then
+			local success, tempTable = scanSide(value)
+			if success then
+				if (strContains("ore", tempTable.name) or inArray(tempTable.name, ADDITIONAL_ORES)) and
+					not inArray(tempTable.name, NOT_BREAKABLE) then
+					a = a + 1
+					ergTable[a] = sidePosition
+
+				end
 			end
+			checkedStack:push(sidePosition)
 		end
 	end
 	turn(temp)
@@ -641,8 +658,6 @@ local function parseJob(startLine, endLine)
 	local lines = fileLines("job.json")
 	local information = textutils.unserializeJSON(fileLine("job.json", lines))
 
-	print_r(information)
-
 	if endLine < 0 or endLine > information.lines then
 		endLine = information.lines
 		TURTLEDATA.estimatedBlocks = information.estimatedBlocks
@@ -681,16 +696,18 @@ local function fillOreStack(workStack, scanTable)
 	return workStack
 end
 
-local function mineVein(vertical)
+local function mineVein(vertical, checkedStack)
 	setPosition()
 	local start = vector.new(POSITION.x, POSITION.y, POSITION.z)
 	local direction = FACING
 	local orePosStack = posStack:create()
+
 	repeat
 		if not orePosStack:isempty() then
 			move(orePosStack:pop())
 		end
-		local succ, scanTable = scan(vertical)
+		local succ, scanTable = scan(vertical, checkedStack)
+
 		orePosStack = fillOreStack(orePosStack, scanTable)
 		if invFull() then
 			HOME.path:push(start)
@@ -705,35 +722,35 @@ local function mineVein(vertical)
 	return true
 end
 
-local function mineToTarget(target)
-	-- print(tostring(target))
+local function mineToTarget(target, checkedStack)
 	setPosition()
+
 	while POSITION.y ~= target.y do
 		if POSITION.y > target.y then
-			mineVein(true)
+			mineVein(true, checkedStack)
 			move(vector.new(POSITION.x, POSITION.y - 1, POSITION.z))
 		else
-			mineVein(true)
+			mineVein(true, checkedStack)
 			move(vector.new(POSITION.x, POSITION.y + 1, POSITION.z))
 		end
 	end
 
 	while POSITION.x ~= target.x do
 		if POSITION.x > target.x then
-			mineVein(false)
+			mineVein(false, checkedStack)
 			move(vector.new(POSITION.x - 1, POSITION.y, POSITION.z))
 		else
-			mineVein(false)
+			mineVein(false, checkedStack)
 			move(vector.new(POSITION.x + 1, POSITION.y, POSITION.z))
 		end
 	end
 
 	while POSITION.z ~= target.z do
 		if POSITION.z > target.z then
-			mineVein(false)
+			mineVein(false, checkedStack)
 			move(vector.new(POSITION.x, POSITION.y, POSITION.z - 1))
 		else
-			mineVein(false)
+			mineVein(false, checkedStack)
 			move(vector.new(POSITION.x, POSITION.y, POSITION.z + 1))
 		end
 	end
@@ -742,16 +759,14 @@ end
 local function mineJob()
 	HOME.path:push(HOME.position) -- home position
 	HOME.path:push(OPERATIONSTART) -- start operation position
-
-	print_r(OPERATIONSTART)
-	mineToTarget(OPERATIONSTART)
+	local checkedStack = posStack:create()
+	mineToTarget(OPERATIONSTART, checkedStack)
 	for key, ebene in pairs(JOB.koords) do
-		print_r(ebene)
 		local arrLength = #(ebene)
 		HOME.path:push(ebene[1]) -- start ebene position
-		HOME.path:push(ebene[1]) -- start ebene position
+		checkedStack:clear()
 		for i = 0, arrLength - 1 do
-			mineToTarget(ebene[i + 1])
+			mineToTarget(ebene[i + 1], checkedStack)
 			if i % 4 == 0 then
 				HOME.path:pop()
 				HOME.path:push(ebene[i + 1]) -- start gang position
@@ -782,6 +797,19 @@ end
 
 if #arg == 2 then
 	main(tonumber(arg[1]), tonumber(arg[2]))
+elseif #arg == 1 and arg[1] == "test" then
+	-- hier können funktionen getestet werden
+	local tstack = posStack:create()
+	local vec1 = vector.new(1, 1, 1)
+	local vec2 = vector.new(1, 1, 1)
+	local vec3 = vector.new(1, 1, 2)
+
+	tstack:push(vec2)
+
+
+	print(vec1 == vec2)
+	print(vec1 == vec3)
+	print(inArray(vec1, tstack:array()))
 else
 	main(1, -1)
 end

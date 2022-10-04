@@ -52,4 +52,5 @@ while true do
     shell.run("clear")
     local ti = textutils.unserializeJSON(turtleInformation)
     print(turtleInformation)
+    sleep(0)
 end
