@@ -1,4 +1,3 @@
-
 VERSION = "1.16"
 POSITION = nil
 FACING = nil
@@ -7,16 +6,18 @@ posStack = {}
 posStack.__index = posStack
 function posStack:create()
 	local stack = {}
-	setmetatable(stack,posStack)
+	setmetatable(stack, posStack)
 	stack.index = 0
 	stack.entry = {}
 	return stack
 end
+
 function posStack:push(pos)
 	self.index = self.index + 1
 	self.entry[self.index] = pos
 	return true
 end
+
 function posStack:pop()
 	if self.index > 0 then
 		local erg = self.entry[self.index]
@@ -26,9 +27,10 @@ function posStack:pop()
 	end
 	return false
 end
+
 function posStack:inStack(pos)
 	local erg = false
-	for i=1,self.index do
+	for i = 1, self.index do
 		local posTest = self.entry[i]
 		if posTest.x == pos.x and posTest.y == pos.y and posTest.z == pos.z then
 			erg = true
@@ -37,12 +39,15 @@ function posStack:inStack(pos)
 	end
 	return erg
 end
+
 function posStack:isempty()
 	return self.index <= 0
 end
+
 function posStack:getIndex()
 	return self.index
 end
+
 function posStack:getByIndex(i)
 	return self.entry[i]
 end
@@ -58,10 +63,11 @@ JOB = {
 }
 
 function print_r(array)
-	for i,v in pairs(array) do
-		print(string.format("%s: %s",i,v))
+	for i, v in pairs(array) do
+		print(string.format("%s: %s", i, v))
 	end
 end
+
 function strToVector(stringToConvert)
 	local temp = {}
 	local i = 1
@@ -69,21 +75,23 @@ function strToVector(stringToConvert)
 		temp[i] = tonumber(param)
 		i = i + 1
 	end
-	local ergVector = vector.new(temp[1],temp[2],temp[3])
+	local ergVector = vector.new(temp[1], temp[2], temp[3])
 	return ergVector
 end
+
 function setHome()
-    local x,z,y = gps.locate(1)
-	POSITION = vector.new(x,y,z)
-    HOME.position = vector.new(x,y,z)
+	local x, y, z = gps.locate(1)
+	POSITION = vector.new(x, y, z)
+	HOME.position = vector.new(x, y, z)
 end
+
 function setDirection()
-	local x, z, y = gps.locate( 1 )
+	local x, y, z = gps.locate(1)
 	if not x then
-		error( "No GPS available", 0 )
+		error("No GPS available", 0)
 	end
 	if turtle.forward() then
-		local nx, nz, ny = gps.locate( 1 )
+		local nx, ny, nz = gps.locate(1)
 		if x - nx == 1 then
 			-- West
 			HOME.facing = 1
@@ -98,21 +106,22 @@ function setDirection()
 			HOME.facing = 0
 		end
 	end
-    FACING = HOME.facing
+	FACING = HOME.facing
 end
+
 function setPosition()
-    local x,z,y = gps.locate(1)
-    if not x then
-		error( "No GPS available", 0 )
+	local x, y, z = gps.locate(1)
+	if not x then
+		error("No GPS available", 0)
 	end
-    POSITION = vector.new(x,y,z)
+	POSITION = vector.new(x, y, z)
 end
 
 function turn(direction)
 	local turnDirection = direction % 4
 	local n = FACING - turnDirection
 	if n < 0 then
-		n = n*(-1)
+		n = n * (-1)
 	end
 	if n == 2 then
 		turtle.turnRight()
@@ -160,13 +169,14 @@ function directionOfPoint(point)
 		return false
 	end
 end
--- calculates the relative position to a given point and distance 
+
+-- calculates the relative position to a given point and distance
 -- depends on the direction the turtle is facing
-function calcExpectedPosition(startPosition,distanceVector)
+function calcExpectedPosition(startPosition, distanceVector)
 	-- (1,1,1)
 	local direction = FACING
-	local erg = vector.new(startPosition.x,startPosition.y,startPosition.z)
-	
+	local erg = vector.new(startPosition.x, startPosition.y, startPosition.z)
+
 	erg.y = erg.y + distanceVector.y
 
 	if direction == 1 or direction == 3 then
@@ -195,69 +205,72 @@ function calcExpectedPosition(startPosition,distanceVector)
 	end
 	return erg
 end
-function getRectangleKoords(startPoint,length)
+
+function getRectangleKoords(startPoint, length)
 	local erg1 = startPoint
-	local erg2 = calcExpectedPosition(startPoint,vector.new(length,0,0))
-	local erg3 = calcExpectedPosition(startPoint,vector.new(length,1,0))
-	local erg4 = calcExpectedPosition(startPoint,vector.new(0,1,0))
-	return erg1,erg2,erg3,erg4
+	local erg2 = calcExpectedPosition(startPoint, vector.new(length, 0, 0))
+	local erg3 = calcExpectedPosition(startPoint, vector.new(length, 1, 0))
+	local erg4 = calcExpectedPosition(startPoint, vector.new(0, 1, 0))
+	return erg1, erg2, erg3, erg4
 end
-function getPlainRectangles(startPoint,depth,width)
+
+function getPlainRectangles(startPoint, depth, width)
 	local erg = {}
 	for i = 0, depth do
 		if i % 3 == 0 then
-			local rectStart = calcExpectedPosition(startPoint,vector.new(0,0,i))
-			local p1,p2,p3,p4 = getRectangleKoords(rectStart,width)
-			table.insert(erg,p1)
-			table.insert(erg,p2)
-			table.insert(erg,p3)
-			table.insert(erg,p4)
+			local rectStart = calcExpectedPosition(startPoint, vector.new(0, 0, i))
+			local p1, p2, p3, p4 = getRectangleKoords(rectStart, width)
+			table.insert(erg, p1)
+			table.insert(erg, p2)
+			table.insert(erg, p3)
+			table.insert(erg, p4)
 		end
 	end
 	return erg
 end
-function buildJob(startPoint,height,depth,width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
+
+function buildJob(startPoint, height, depth, width) -- start ist oben vorne links, ende ist unten hinten rechts vom würfel
 	setPosition()
 	local t = directionOfPoint(startPoint)
 	turn(t)
-	local file = io.open("job.json","w")
+	local file = io.open("job.json", "w")
 	local c = 0
 	for i = 0, height do
 		if i % 3 == 0 then
-			local plainStartPoint = calcExpectedPosition(startPoint,vector.new(0,-i,0))
-			local calculatedPlain = getPlainRectangles(plainStartPoint,depth,width)
-			table.insert(calculatedPlain,vector.new(plainStartPoint.x,plainStartPoint.y+1,plainStartPoint.z))
+			local plainStartPoint = calcExpectedPosition(startPoint, vector.new(0, -i, 0))
+			local calculatedPlain = getPlainRectangles(plainStartPoint, depth, width)
+			table.insert(calculatedPlain, vector.new(plainStartPoint.x, plainStartPoint.y + 1, plainStartPoint.z))
 			--table.insert(calculatedPlain,plainStartPoint)
 			local job = textutils.serializeJSON(calculatedPlain)
-			file:write(job,"\n")
+			file:write(job, "\n")
 			c = c + 1
 		end
 	end
-    -- end of file descriptor
-    local information = {
-        lines = c,
+	-- end of file descriptor
+	local information = {
+		lines = c,
 		start = startPoint,
 		estimatedBlocks = (c * math.ceil(depth / 3) * (width + 1) + (depth - math.ceil(depth / 3))) * 2
-    }
-    file:write(textutils.serializeJSON(information))
+	}
+	file:write(textutils.serializeJSON(information))
 	file:close()
 	return c
 end
 
-function main(x,y,z,height,depth,width)
-    setHome()
+function main(x, y, z, height, depth, width)
+	setHome()
 	setDirection()
 	turtle.back()
 	HOME.facing = FACING
 	setPosition()
-	local vec = vector.new(x,y,z)
-	local ebenen = buildJob(vec,height,depth,width)
-	print("Job created successfully plains: "..ebenen)
-    return true
+	local vec = vector.new(x, y, z)
+	local ebenen = buildJob(vec, height, depth, width)
+	print("Job created successfully plains: " .. ebenen)
+	return true
 end
 
 if #arg == 6 then
-	main(tonumber(arg[1]),tonumber(arg[2]),tonumber(arg[3]),tonumber(arg[4]),tonumber(arg[5]),tonumber(arg[6]))
+	main(tonumber(arg[1]), tonumber(arg[2]), tonumber(arg[3]), tonumber(arg[4]), tonumber(arg[5]), tonumber(arg[6]))
 else
 	shell.execute("clear")
 	print("please enter the target location x,y,z")
@@ -268,5 +281,5 @@ else
 
 	vec = strToVector(vec)
 	dimensions = strToVector(dimensions)
-	main(vec.x,vec.y,vec.z,dimensions.x,dimensions.y,dimensions.z)
+	main(vec.x, vec.y, vec.z, dimensions.x, dimensions.y, dimensions.z)
 end
